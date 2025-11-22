@@ -2,6 +2,20 @@
 
 A command-line interface for reading the Bible in Greek (N1904), English, and French (TOB).
 
+```sh
+./run.sh "Mc 1:1-2"
+
+Marc 1:1-2
+
+Marc 1:1
+Ἀρχὴ τοῦ εὐαγγελίου Ἰησοῦ Χριστοῦ (Υἱοῦ Θεοῦ). 
+Commencement de l'Evangile de Jésus Christ Fils de Dieu:
+
+Marc 1:2
+Καθὼς γέγραπται ἐν τῷ Ἠσαΐᾳ τῷ προφήτῃ Ἰδοὺ ἀποστέλλω τὸν ἄγγελόν μου πρὸ προσώπου σου, ὃς κατασκευάσει τὴν ὁδόν σου· 
+Ainsi qu'il est écrit dans le livre du prophète Esaïe, Voici, j'envoie mon messager en avant de toi, pour préparer ton chemin.
+```
+
 ## Setup
 
 The project requires Python 3 and the `text-fabric` library.
