@@ -2,43 +2,50 @@
 
 A command-line interface for reading the Bible in Greek (N1904), English, and French (TOB).
 
+## Post-installation
+
+Add gnt to your $PATH in your shell config file (e.g. .zshrc, .bashrc, .bash_profile):
 ```sh
-./run.sh "Mc 1:1-2"
-
-Marc 1:1-2
-
-Marc 1:1
-Ἀρχὴ τοῦ εὐαγγελίου Ἰησοῦ Χριστοῦ (Υἱοῦ Θεοῦ). 
-Commencement de l'Evangile de Jésus Christ Fils de Dieu:
-
-Marc 1:2
-Καθὼς γέγραπται ἐν τῷ Ἠσαΐᾳ τῷ προφήτῃ Ἰδοὺ ἀποστέλλω τὸν ἄγγελόν μου πρὸ προσώπου σου, ὃς κατασκευάσει τὴν ὁδόν σου· 
-Ainsi qu'il est écrit dans le livre du prophète Esaïe, Voici, j'envoie mon messager en avant de toi, pour préparer ton chemin.
+export PATH=$PATH:[YOUR-PATH-TO]/biblecli/bin
 ```
-
-## Setup
-
-The project requires Python 3 and the `text-fabric` library.
-A helper script `run.sh` is provided to manage the virtual environment and dependencies automatically.
 
 ## Usage
 
-You can use the `run.sh` script to execute commands. It will automatically set up the environment if needed.
+You can use the `gnt` script to execute commands. It will automatically set up the environment if needed. The project requires Python 3 and the `text-fabric` library.
+`gnt` manages the virtual environment and dependencies automatically.
 
-### Search for a Verse
-```bash
-./run.sh "John 3:16"
-./run.sh "Luc 1:1"
+
+Display a verse
+```sh
+gnt "Jn 1:1" 
+
+Ἐν ἀρχῇ ἦν ὁ Λεγος, καὶ ὁ Λεγος ἦν πρὸς τὸν Θεον, καὶ Θεος ἦν ὁ Λεγος. 
+Au commencement était le Verbe, et le Verbe était tourné vers Dieu, et le Verbe était Dieu.
 ```
 
-### Search for a Range
-```bash
-./run.sh "Mt 5:1-10"
+Greek+French is default, but `--tr [fr/gr]` gives you one translation:
+
+```sh
+gnt "Marc 1:1-2" --tr fr
+gnt "Mk 4" --tr gr
 ```
 
-### List Books
+Can look up ranges of verses:
+
+```sh
+gnt "Mt 5:1-10"
+```
+
+Entire chapters:
+
+```sh
+gnt "Mt 5"
+```
+
+List Books
+
 ```bash
-./run.sh list books
+gnt list books
 ```
 
 ## Manual Setup

@@ -93,7 +93,7 @@ def get_french_text(book_en, chapter_num, verse_num):
     return F.text.v(verse_node)
 
     
-def handle_reference(A, ref_str, show_english=False):
+def handle_reference(A, ref_str, show_english=False, show_greek=True, show_french=True):
     api = A.api
     T = api.T
     F = api.F
@@ -153,23 +153,56 @@ def handle_reference(A, ref_str, show_english=False):
                         node = A.nodeFromSectionStr(single_ref)
                         
                         if node:
-                            print_verse(A, node, show_english)
+                            print_verse(A, node, show_english, show_greek, show_french)
                         else:
                             print(f"Could not find verse: {single_ref}")
                     return
 
+        # Check if it's a chapter reference (e.g., "John 13")
+        if ":" not in ref_str and " " in ref_str:
+            parts = ref_str.rsplit(' ', 1)
+            if len(parts) == 2:
+                book_name = parts[0]
+                try:
+                    chapter_num = int(parts[1])
+                    
+                    # Find all verses in this chapter
+                    book_fr = N1904_TO_TOB.get(book_name)
+                    if book_fr:
+                        print(f"\n{book_fr} {chapter_num}")
+                    else:
+                        print(f"\n{book_name} {chapter_num}")
+                    
+                    # Find the chapter node
+                    chapter_nodes = [n for n in F.otype.s('chapter') 
+                                    if F.book.v(n) == book_name and F.chapter.v(n) == chapter_num]
+                    
+                    if chapter_nodes:
+                        chapter_node = chapter_nodes[0]
+                        # Get all verse nodes in this chapter
+                        verse_nodes = L.d(chapter_node, otype='verse')
+                        
+                        for verse_node in verse_nodes:
+                            print_verse(A, verse_node, show_english, show_greek, show_french)
+                        return
+                    else:
+                        print(f"Could not find chapter: {ref_str}")
+                        return
+                except ValueError:
+                    pass  # Not a valid chapter number, continue to fallback
+        
         # Fallback to single reference lookup
         node = A.nodeFromSectionStr(ref_str)
         
         if node:
-            print_verse(A, node, show_english)
+            print_verse(A, node, show_english, show_greek, show_french)
         else:
             print(f"Could not find reference: {ref_str}")
             
     except Exception as e:
         print(f"Error processing reference: {e}")
 
-def print_verse(A, node, show_english=False):
+def print_verse(A, node, show_english=False, show_greek=True, show_french=True):
     api = A.api
     T = api.T
     F = api.F
@@ -185,8 +218,9 @@ def print_verse(A, node, show_english=False):
     print(f"\n{book_fr} {chapter}:{verse}")
 
     # Greek text
-    greek_text = T.text(node)
-    print(f"{greek_text}")
+    if show_greek:
+        greek_text = T.text(node)
+        print(f"{greek_text}")
     
     # English translation
     if show_english:
@@ -200,9 +234,10 @@ def print_verse(A, node, show_english=False):
         print(f"{' '.join(english_text)}")
     
     # French translation (TOB)
-    french_text = get_french_text(book_en, chapter, verse)
-    if french_text:
-        print(f"{french_text}")
+    if show_french:
+        french_text = get_french_text(book_en, chapter, verse)
+        if french_text:
+            print(f"{french_text}")
 
 def handle_list(A, args):
     api = A.api
@@ -227,7 +262,7 @@ def main():
     parser = argparse.ArgumentParser(description="N1904 CLI Tool")
     parser.add_argument("command_or_ref", help="Command (e.g., 'search', 'list') or Bible reference (e.g., 'Mk 1,1')")
     parser.add_argument("args", nargs="*", help="Arguments for the command")
-    parser.add_argument("--tr", nargs="+", choices=["en"], help="Translations to display (e.g., 'en')")
+    parser.add_argument("--tr", nargs="+", choices=["en", "fr", "gr"], help="Translations to display: 'en' (English), 'fr' (French only), 'gr' (Greek only)")
     args = parser.parse_args()
 
     # Determine if first argument is a command or a reference
@@ -258,10 +293,22 @@ def main():
         sys.exit(1)
 
     show_english = False
-    if args.tr and "en" in args.tr:
-        show_english = True
+    show_greek = True
+    show_french = True
+    
+    if args.tr:
+        if "en" in args.tr:
+            show_english = True
+        if "fr" in args.tr:
+            # Show only French
+            show_greek = False
+            show_french = True
+        if "gr" in args.tr:
+            # Show only Greek
+            show_greek = True
+            show_french = False
 
-    handle_reference(A, first_arg, show_english)
+    handle_reference(A, first_arg, show_english, show_greek, show_french)
 
 
 if __name__ == "__main__":
