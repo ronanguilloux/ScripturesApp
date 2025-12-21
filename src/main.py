@@ -4,8 +4,8 @@ from tf.app import use
 from tf.fabric import Fabric
 
 # TOB Configuration
-GNT_DIR="/Users/ronan/Documents/Gemini/antigravity/biblecli"
-TOB_DIR = GNT_DIR+'/tob_tf/TOB/TraductionOecumenique/1.0'
+BIBLECLI_DIR="/Users/ronan/Documents/Gemini/antigravity/biblecli"
+TOB_DIR = BIBLECLI_DIR+'/tob_tf/TOB/TraductionOecumenique/1.0'
 try:
     import os
     import contextlib
@@ -27,7 +27,7 @@ def load_book_mappings():
     global N1904_TO_TOB, N1904_TO_CODE, ABBREVIATIONS, CODE_TO_FR_ABBR, CODE_TO_N1904, BOOK_ORDER
     import json
     import os
-    path = os.path.join(GNT_DIR, "data", "cross_booknames_fr.json")
+    path = os.path.join(BIBLECLI_DIR, "data", "cross_booknames_fr.json")
     if not os.path.exists(path):
         return
     try:
@@ -97,10 +97,10 @@ def load_cross_references(book_code):
     if book_code in OT_BOOKS_CODE:
         filename = "references_ot_openbible.json"
         
-    path = os.path.join(GNT_DIR, "data", filename)
+    path = os.path.join(BIBLECLI_DIR, "data", filename)
     if not os.path.exists(path):
         # Fallback to the monolithic file if it still exists (for transition)
-        path = os.path.join(GNT_DIR, "data", "references_openbible.json")
+        path = os.path.join(BIBLECLI_DIR, "data", "references_openbible.json")
         if not os.path.exists(path):
             return {}
             
@@ -490,13 +490,13 @@ def print_help():
 GNT(1)                       Bible CLI Manual                       GNT(1)
 
 NAME
-       gnt - A command-line interface for the Greek New Testament (N1904)
+       biblecli - A command-line interface for the Greek New Testament (N1904)
 
 SYNOPSIS
-       gnt [COMMAND | REFERENCE] [ARGS...] [OPTIONS]
+       biblecli [COMMAND | REFERENCE] [ARGS...] [OPTIONS]
 
 DESCRIPTION
-       gnt is a tool for reading and searching the Greek New Testament (N1904)
+       biblecli is a tool for reading and searching the Greek New Testament (N1904)
        along with English and French (TOB) translations.
 
 COMMANDS
@@ -532,19 +532,19 @@ OPTIONS
 
 EXAMPLES
        Display John 1:1 in Greek and French:
-               gnt "Jn 1:1"
+               biblecli "Jn 1:1"
 
        Display Matthew 5:1-10:
-               gnt "Mt 5:1-10"
+               biblecli "Mt 5:1-10"
 
        Display Mark chapter 4 in Greek only:
-               gnt "Mk 4" -t gr
+               biblecli "Mk 4" -t gr
 
        Display John 1:1 with cross-references:
-               gnt "Jn 1:1" --crossref
+               biblecli "Jn 1:1" --crossref
 
        List all books:
-               gnt list books
+               biblecli list books
 
 AUTHOR
        Written by Ronan Guilloux and the Gemini Team.

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define the virtual environment directory
-GNT_DIR="/Users/ronan/Documents/Gemini/antigravity/biblecli"
-VENV_DIR="$GNT_DIR/.venv"
+BIBLE_DIR="/Users/ronan/Documents/Gemini/antigravity/biblecli"
+VENV_DIR="$BIBLE_DIR/.venv"
 
 # Check if the virtual environment exists
 if [ ! -d "$VENV_DIR" ]; then
@@ -20,4 +20,4 @@ else
 fi
 
 # Run the main script with all passed arguments
-python3 $GNT_DIR/src/main.py "$@"
+python3 $BIBLE_DIR/src/main.py "$@"
