@@ -82,11 +82,6 @@
                     "note": ""
                 },
                 {
-                    "target": "MRK.14.61-62",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
                     "target": "MRK.15.39",
                     "type": "parallel",
                     "note": ""
@@ -165,11 +160,6 @@
                     "note": ""
                 },
                 {
-                    "target": "MAT.3.1",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
                     "target": "ACT.13.24",
                     "type": "parallel",
                     "note": ""
@@ -181,11 +171,6 @@
                 },
                 {
                     "target": "MAT.3.6",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
-                    "target": "MAT.3.1",
                     "type": "parallel",
                     "note": ""
                 },
@@ -616,11 +601,6 @@
                 },
                 {
                     "target": "MAT.6.10",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
-                    "target": "MAT.3.2",
                     "type": "parallel",
                     "note": ""
                 },
@@ -2277,11 +2257,6 @@
                     "note": ""
                 },
                 {
-                    "target": "MAT.10.25",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
                     "target": "MAT.12.24",
                     "type": "parallel",
                     "note": ""
@@ -3172,11 +3147,6 @@
                     "note": ""
                 },
                 {
-                    "target": "LUK.7.50",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
                     "target": "ACT.16.36",
                     "type": "parallel",
                     "note": ""
@@ -3525,11 +3495,6 @@
                     "note": ""
                 },
                 {
-                    "target": "MAT.16.14",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
                     "target": "MAT.21.11",
                     "type": "parallel",
                     "note": ""
@@ -3643,11 +3608,6 @@
                 },
                 {
                     "target": "MRK.8.2",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
-                    "target": "MAT.9.36",
                     "type": "parallel",
                     "note": ""
                 },
@@ -4293,11 +4253,6 @@
                     "note": ""
                 },
                 {
-                    "target": "MAT.16.1",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
                     "target": "LUK.11.16",
                     "type": "parallel",
                     "note": ""
@@ -4355,11 +4310,6 @@
                 },
                 {
                     "target": "HEB.3.10",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
-                    "target": "MAT.12.39",
                     "type": "parallel",
                     "note": ""
                 },
@@ -4981,16 +4931,6 @@
                 },
                 {
                     "target": "MAT.9.25",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
-                    "target": "MRK.1.31",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
-                    "target": "MRK.5.41",
                     "type": "parallel",
                     "note": ""
                 },
@@ -6753,11 +6693,6 @@
                 },
                 {
                     "target": "1PE.4.14",
-                    "type": "parallel",
-                    "note": ""
-                },
-                {
-                    "target": "MAT.10.22",
                     "type": "parallel",
                     "note": ""
                 }

@@ -515,13 +515,30 @@ def print_verse(A, node=None, book_en=None, chapter=None, verse=None, show_engli
                             if len(parts) == 2:
                                 start_p = parts[0].split(".")
                                 end_p = parts[1].split(".")
+                                
+                                # Case 1: Full ref to full ref (e.g. MRK.1.1-MRK.1.5)
                                 if len(start_p) == 3 and len(end_p) == 3:
                                     b_code = start_p[0]
                                     ch = int(start_p[1])
                                     s_v = int(start_p[2])
                                     e_v = int(end_p[2])
-                                    for v in range(s_v, e_v + 1):
-                                        refs_to_fetch.append((b_code, ch, v))
+                                    # Assuming same book and chapter for simple display logic
+                                    if b_code == end_p[0] and ch == int(end_p[1]):
+                                        for v in range(s_v, e_v + 1):
+                                            refs_to_fetch.append((b_code, ch, v))
+
+                                # Case 2: Full ref to verse only (e.g. MRK.1.1-5)
+                                elif len(start_p) == 3 and len(end_p) == 1:
+                                     b_code = start_p[0]
+                                     ch = int(start_p[1])
+                                     s_v = int(start_p[2])
+                                     try:
+                                         e_v = int(end_p[0])
+                                         if e_v >= s_v: # Basic sanity check
+                                             for v in range(s_v, e_v + 1):
+                                                 refs_to_fetch.append((b_code, ch, v))
+                                     except ValueError:
+                                         pass
                         else:
                             parts = target_raw.split(".")
                             if len(parts) == 3:

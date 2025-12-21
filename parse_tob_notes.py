@@ -141,7 +141,15 @@ def parse_relations_from_content(content):
                 "note": ""
             })
             
-    return relations
+    # Deduplicate relations based on target
+    seen_targets = set()
+    unique_relations = []
+    for r in relations:
+        if r["target"] not in seen_targets:
+            unique_relations.append(r)
+            seen_targets.add(r["target"])
+            
+    return unique_relations
 
 def parse_tob_file(filepath):
     with open(filepath, 'r') as f:
