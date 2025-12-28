@@ -3,48 +3,8 @@
     "description": "Ronan's NT Intertextual Biblical Relations Database",
     "cross_references": [
         {
-            "source": "MAT.2.6",
-            "relations": [
-                {
-                    "target": "MIC.5.2",
-                    "type": "quotation",
-                    "note": "Prophecy regarding the Messiah's birthplace"
-                }
-            ]
-        },
-        {
             "source": "MRK.1.1",
             "relations": [
-                {
-                    "target": "LUK.1.1",
-                    "type": "parallel",
-                    "note": "New Test Note"
-                },
-                {
-                    "target": "LUK.1.1",
-                    "type": "parallel",
-                    "note": "Test Note via CLI 2"
-                },
-                {
-                    "target": "LUK.1.2",
-                    "type": "parallel",
-                    "note": "Test Note via CLI 2"
-                },
-                {
-                    "target": "LUK.1.1",
-                    "type": "parallel",
-                    "note": "Test Note via CLI 2"
-                },
-                {
-                    "target": "LUK.1.1",
-                    "type": "parallel",
-                    "note": "Duplicate Note Check"
-                },
-                {
-                    "target": "LUK.1.1",
-                    "type": "parallel",
-                    "note": "Duplicate Note Check"
-                },
                 {
                     "target": "LUK.1.2",
                     "type": "parallel",
