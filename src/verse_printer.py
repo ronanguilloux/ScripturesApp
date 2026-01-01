@@ -212,3 +212,42 @@ class VersePrinter:
                                 # Original code:
                                 # print(f"        {fmt_target}")
                             print(line)
+                            
+                            if show_crossref_text:
+                                refs_to_fetch = []
+                                # Parse target for text fetching
+                                # Logic compatible with 'ACT.1.25-ACT.1.26' or 'ACT.1.25'
+                                if "-" in target:
+                                    parts = target.split("-")
+                                    if len(parts) == 2:
+                                        start_p = parts[0].split(".")
+                                        end_p = parts[1].split(".")
+                                        
+                                        # Case 1: Full ref to full ref "BOOK.C.V-BOOK.C.V"
+                                        if len(start_p) == 3 and len(end_p) == 3:
+                                            b_code = start_p[0]
+                                            ch = int(start_p[1])
+                                            s_v = int(start_p[2])
+                                            # End verse check basic
+                                            if b_code == end_p[0] and ch == int(end_p[1]):
+                                                e_v = int(end_p[2])
+                                                for v in range(s_v, e_v + 1):
+                                                    refs_to_fetch.append((b_code, ch, v))
+                                        
+                                        # Case 2: Full ref to verse only? (unlikely in standardized db but possible in display logic)
+                                        # The DB standardizes to full refs usually, but let's be safe.
+                                else:
+                                    parts = target.split(".")
+                                    if len(parts) == 3:
+                                        refs_to_fetch.append((parts[0], int(parts[1]), int(parts[2])))
+                                
+                                for b_code, ch, vs in refs_to_fetch:
+                                    # Convert 3-letter code back to N1904 English name for get_french_text lookup?
+                                    # get_french_text takes (book_en, ...). 
+                                    # We need code_to_n1904 mapping.
+                                    # normalizer has code_to_n1904.
+                                    b_en = self.normalizer.code_to_n1904.get(b_code)
+                                    if b_en:
+                                        txt = self.get_french_text(b_en, ch, vs)
+                                        if txt and not txt.startswith("[TOB:"):
+                                            print(f"            {txt}")
