@@ -68,14 +68,9 @@ Genesis 1:1
 Au commencement, Dieu créa le ciel et la terre.
 ```
 
-Display a verse (Greek and French are default):
-```sh
-biblecli "Jn 1:1"
-```
-
-Display a New Testament verse from (as default)
+Display a New Testament verse from
 - Greek New Testament (Nestle 1904),
-- and French TOB:
+- and Berean Interlinear Bible (English translation):
 ```sh
 biblecli "Mk 1:1" --tr en gr
 ```
@@ -85,6 +80,13 @@ Output:
 Mark 1:1
 Ἀρχὴ τοῦ εὐαγγελίου Ἰησοῦ Χριστοῦ (Υἱοῦ Θεοῦ). 
 [The] beginning of the gospel of Jesus Christ Son of God
+```
+
+### Verses, Ranges, Chapters
+
+Display a verse (Greek, French is displayed by default):
+```sh
+biblecli "Jn 1:1"
 ```
 
 Display a verse range:
@@ -105,7 +107,7 @@ biblecli list books
 ### Translations
 
 
-Use the `-t` or `--tr` option to specify translations. Supported: `en` (English), `fr` (French TOB), `gr` (Greek N1904).
+Use the `-t` or `--tr` option to specify translations. Supported: `en` (Berean Interlinear Bible English translation), `fr` (French TOB), `gr` (Greek N1904).
 When no translation is specified, the default is `fr` (French TOB). 
 
 Show only English:
@@ -120,7 +122,7 @@ biblecli "Jn 3:16" -t en fr gr
 
 ### Cross-references
 
-The tool supports verse-level cross-references from OpenBible data.
+The tool supports verse-level cross-references from [OpenBible data](https://www.openbible.info/labs/cross-references/).
 
 Show cross-reference list:
 ```sh
