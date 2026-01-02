@@ -35,18 +35,9 @@ class OfflineLXXApp:
     def __init__(self, api, normalizer):
         self.api = api
         self.normalizer = normalizer
-        # Manual overrides for LXX naming conventions (Rahlfs 1935 vs Standard)
-        self.lxx_overrides = {
-            "EXO": "Exod",
-            "1SA": "1Sam",
-            "2SA": "2Sam",
-            "1KI": "1Kgs",
-            "2KI": "2Kgs",
-            "1CH": "1Chr",
-            "2CH": "2Chr",
-            "ECC": "Qoh",
-            "SNG": "Cant"
-        }
+        # LXX app expects specific book names (e.g. "2Kgs")
+        # These are now handled via aliases in bible_books.json
+        # The normalizer's `get_lxx_abbr` method is used to retrieve the correct abbreviation.
         
     def nodeFromSectionStr(self, ref_str):
         # We need to parse ref_str -> Book, Chapter, Verse
@@ -59,30 +50,39 @@ class OfflineLXXApp:
             
             code, ch, vs, _ = norm
             
-            # LXX uses abbreviations like "Gen"
-            # Try override first
-            abbr = self.lxx_overrides.get(code)
+            # LXX uses strict book names. We need to find the one that works.
+            # We try all candidates from the abbreviations list.
+            candidates = []
             
-            # Fallback to standard abbr from normalizer if not valid
-            if not abbr:
-                abbr = self.normalizer.code_to_en_abbr.get(code)
+            # Get all abbreviations (canonical is first)
+            abbreviations = self.normalizer.code_to_abbreviations.get(code, [])
+            candidates.extend(abbreviations)
             
-            if not abbr:
-                return None
+            # Also try spacerless versions of abbreviations (e.g. "2 Sam" -> "2Sam")
+            # This is important because we removed redundant spacerless aliases from JSON
+            # but TF might require the spacerless version (e.g. "2Sam").
+            spacerless = [abbr.replace(" ", "") for abbr in abbreviations if " " in abbr]
+            candidates.extend(spacerless)
+            
+            # Code itself (fallback)
+            candidates.append(code)
+
+            # Try candidates until one returns a node.
+            for abbr in candidates:
+                # API expects string for book name in section tuple
+                if vs > 0:
+                     node = self.api.T.nodeFromSection((abbr, ch, vs))
+                elif ch > 0:
+                     node = self.api.T.nodeFromSection((abbr, ch))
+                else:
+                     node = self.api.T.nodeFromSection((abbr,))
                 
-            # Attempt lookup
-            # T.nodeFromSection expects tuple
-            # If vs is 0, we want the chapter node? Or first verse?
-            # Standard TF nodeFromSection returns Chapter node if input is (Book, Chapter).
+                # Check if valid node returned (TF returns None or sometimes 0 if not found?)
+                # nodeFromSection usually returns None if not found, or a node int.
+                if node:
+                    return node
             
-            if vs > 0:
-                node = self.api.T.nodeFromSection((abbr, ch, vs))
-            elif ch > 0:
-                node = self.api.T.nodeFromSection((abbr, ch))
-            else:
-                 node = self.api.T.nodeFromSection((abbr,))
-                 
-            return node
+            return None
             
         except Exception as e:
             # print(f"OfflineLXX lookup error: {e}")

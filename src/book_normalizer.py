@@ -9,12 +9,13 @@ class BookNormalizer:
         self.n1904_to_code = {}
         self.code_to_fr_abbr = {}
         self.code_to_en_abbr = {}
+        self.code_to_abbreviations = {}
         self.code_to_n1904 = {}
         self.book_order = {}
         self._load_mappings()
 
     def _load_mappings(self):
-        path = os.path.join(self.data_dir, "cross_booknames_fr.json")
+        path = os.path.join(self.data_dir, "bible_books.json")
         if not os.path.exists(path):
             print(f"Warning: Mapping file not found at {path}")
             return
@@ -28,8 +29,11 @@ class BookNormalizer:
                 self.book_order[code] = i
                 en_info = info.get("en", {})
                 en_label = en_info.get("label")
-                en_abbr = en_info.get("abbr")
+                abbreviations = en_info.get("abbreviations", [])
                 
+                # Canonical is first element
+                en_abbr = abbreviations[0] if abbreviations else None
+
                 # Internal N1904 key construction (legacy logic preserved)
                 en_key = en_label if en_label else ""
                 if en_key.startswith("1 "): en_key = "I_" + en_key[2:]
@@ -39,51 +43,37 @@ class BookNormalizer:
                 
                 fr = info.get("fr", {})
                 fr_label = fr.get("label")
-                fr_abbr = fr.get("abbr")
+                fr_abbreviations = fr.get("abbreviations", [])
+                fr_abbr = fr_abbreviations[0] if fr_abbreviations else None
                 
                 if en_key:
                     self.n1904_to_tob[en_key] = fr_label
                     self.n1904_to_code[en_key] = code
                     self.code_to_fr_abbr[code] = fr_abbr
                     self.code_to_en_abbr[code] = en_abbr
+                    self.code_to_abbreviations[code] = abbreviations # Now stores all abbreviations
                     self.code_to_n1904[code] = en_key
                     
                     # Register English variations
                     self.abbreviations[en_key] = en_key
                     self.abbreviations[code] = en_key 
                     if en_label: self.abbreviations[en_label] = en_key
-                    if en_abbr: 
-                        self.abbreviations[en_abbr] = en_key
-                        if " " in en_abbr:
-                            self.abbreviations[en_abbr.replace(" ", "")] = en_key
                     
+                    # Register all abbreviations
+                    for abbr in abbreviations:
+                        self.abbreviations[abbr] = en_key
+                        if " " in abbr:
+                            self.abbreviations[abbr.replace(" ", "")] = en_key
+
                 # Register French variations
-                if fr_abbr: 
-                    self.abbreviations[fr_abbr] = en_key
-                    if " " in fr_abbr:
-                        self.abbreviations[fr_abbr.replace(" ", "")] = en_key
+                for fr_abbr_item in fr_abbreviations:
+                    self.abbreviations[fr_abbr_item] = en_key
+                    if " " in fr_abbr_item:
+                         self.abbreviations[fr_abbr_item.replace(" ", "")] = en_key
+                
                 if fr_label: self.abbreviations[fr_label] = en_key
-
-            # Common English extras (fallbacks)
-            for k, v in {"Mk": "Mark", "Lk": "Luke", "Jn": "John"}.items():
-                if k not in self.abbreviations: self.abbreviations[k] = v
-
-            # Manual overrides for LXX/Rahlfs naming conventions that differ from standard
-            lxx_overrides = {
-                "Exod": "EXO",
-                "1Sam": "1SA", 
-                "2Sam": "2SA",
-                "1Kgs": "1KI",
-                "2Kgs": "2KI",
-                "1Chr": "1CH",
-                "2Chr": "2CH",
-                "Qoh": "ECC",
-                "Cant": "SNG"
-            }
-            for lxx_abbr, code in lxx_overrides.items():
-                if code in self.code_to_n1904:
-                    canonical = self.code_to_n1904[code]
-                    self.abbreviations[lxx_abbr] = canonical
+            
+            # Clean up: No more hardcoded aliases here!
 
         except Exception as e:
             print(f"Warning: Could not load book mappings: {e}")

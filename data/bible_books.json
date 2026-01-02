@@ -5,661 +5,933 @@
         "GEN": {
             "en": {
                 "label": "Genesis",
-                "abbr": "Gen"
+                "abbreviations": [
+                    "Gen"
+                ]
             },
             "fr": {
                 "label": "Genèse",
-                "abbr": "Gn"
+                "abbreviations": [
+                    "Gn"
+                ]
             }
         },
         "EXO": {
             "en": {
                 "label": "Exodus",
-                "abbr": "Ex"
+                "abbreviations": [
+                    "Ex",
+                    "Exod"
+                ]
             },
             "fr": {
                 "label": "Exode",
-                "abbr": "Ex"
+                "abbreviations": [
+                    "Ex"
+                ]
             }
         },
         "LEV": {
             "en": {
                 "label": "Leviticus",
-                "abbr": "Lev"
+                "abbreviations": [
+                    "Lev"
+                ]
             },
             "fr": {
                 "label": "Lévitique",
-                "abbr": "Lv"
+                "abbreviations": [
+                    "Lv"
+                ]
             }
         },
         "NUM": {
             "en": {
                 "label": "Numbers",
-                "abbr": "Num"
+                "abbreviations": [
+                    "Num"
+                ]
             },
             "fr": {
                 "label": "Nombres",
-                "abbr": "Nb"
+                "abbreviations": [
+                    "Nb"
+                ]
             }
         },
         "DEU": {
             "en": {
                 "label": "Deuteronomy",
-                "abbr": "Deut"
+                "abbreviations": [
+                    "Deut"
+                ]
             },
             "fr": {
                 "label": "Deutéronome",
-                "abbr": "Dt"
+                "abbreviations": [
+                    "Dt"
+                ]
             }
         },
         "JOS": {
             "en": {
                 "label": "Joshua",
-                "abbr": "Josh"
+                "abbreviations": [
+                    "Josh"
+                ]
             },
             "fr": {
                 "label": "Josué",
-                "abbr": "Jos"
+                "abbreviations": [
+                    "Jos"
+                ]
             }
         },
         "JDG": {
             "en": {
                 "label": "Judges",
-                "abbr": "Judg"
+                "abbreviations": [
+                    "Judg"
+                ]
             },
             "fr": {
                 "label": "Juges",
-                "abbr": "Jg"
+                "abbreviations": [
+                    "Jg"
+                ]
             }
         },
         "RUT": {
             "en": {
                 "label": "Ruth",
-                "abbr": "Ruth"
+                "abbreviations": [
+                    "Ruth"
+                ]
             },
             "fr": {
                 "label": "Ruth",
-                "abbr": "Rt"
+                "abbreviations": [
+                    "Rt"
+                ]
             }
         },
         "1SA": {
             "en": {
                 "label": "1 Samuel",
-                "abbr": "1 Sam"
+                "abbreviations": [
+                    "1 Sam"
+                ]
             },
             "fr": {
                 "label": "1 Samuel",
-                "abbr": "1 S"
+                "abbreviations": [
+                    "1 S"
+                ]
             }
         },
         "2SA": {
             "en": {
                 "label": "2 Samuel",
-                "abbr": "2 Sam"
+                "abbreviations": [
+                    "2 Sam"
+                ]
             },
             "fr": {
                 "label": "2 Samuel",
-                "abbr": "2 S"
+                "abbreviations": [
+                    "2 S"
+                ]
             }
         },
         "1KI": {
             "en": {
                 "label": "1 Kings",
-                "abbr": "1 Kings"
+                "abbreviations": [
+                    "1 Kings",
+                    "1Kgs"
+                ]
             },
             "fr": {
                 "label": "1 Rois",
-                "abbr": "1 R"
+                "abbreviations": [
+                    "1 R"
+                ]
             }
         },
         "2KI": {
             "en": {
                 "label": "2 Kings",
-                "abbr": "2 Kings"
+                "abbreviations": [
+                    "2 Kings",
+                    "2Kgs",
+                    "2R"
+                ]
             },
             "fr": {
                 "label": "2 Rois",
-                "abbr": "2 R"
+                "abbreviations": [
+                    "2 R"
+                ]
             }
         },
         "1CH": {
             "en": {
                 "label": "1 Chronicles",
-                "abbr": "1 Chron"
+                "abbreviations": [
+                    "1 Chron",
+                    "1Chr"
+                ]
             },
             "fr": {
                 "label": "1 Chroniques",
-                "abbr": "1 Ch"
+                "abbreviations": [
+                    "1 Ch"
+                ]
             }
         },
         "2CH": {
             "en": {
                 "label": "2 Chronicles",
-                "abbr": "2 Chron"
+                "abbreviations": [
+                    "2 Chron",
+                    "2Chr"
+                ]
             },
             "fr": {
                 "label": "2 Chroniques",
-                "abbr": "2 Ch"
+                "abbreviations": [
+                    "2 Ch"
+                ]
             }
         },
         "EZR": {
             "en": {
                 "label": "Ezra",
-                "abbr": "Ezra"
+                "abbreviations": [
+                    "Ezra"
+                ]
             },
             "fr": {
                 "label": "Esdras",
-                "abbr": "Esd"
+                "abbreviations": [
+                    "Esd"
+                ]
             }
         },
         "NEH": {
             "en": {
                 "label": "Nehemiah",
-                "abbr": "Neh"
+                "abbreviations": [
+                    "Neh"
+                ]
             },
             "fr": {
                 "label": "Néhémie",
-                "abbr": "Ne"
+                "abbreviations": [
+                    "Ne"
+                ]
             }
         },
         "EST": {
             "en": {
                 "label": "Esther",
-                "abbr": "Esth"
+                "abbreviations": [
+                    "Esth"
+                ]
             },
             "fr": {
                 "label": "Esther",
-                "abbr": "Est"
+                "abbreviations": [
+                    "Est"
+                ]
             }
         },
         "JOB": {
             "en": {
                 "label": "Job",
-                "abbr": "Job"
+                "abbreviations": [
+                    "Job"
+                ]
             },
             "fr": {
                 "label": "Job",
-                "abbr": "Jb"
+                "abbreviations": [
+                    "Jb"
+                ]
             }
         },
         "PSA": {
             "en": {
                 "label": "Psalms",
-                "abbr": "Ps"
+                "abbreviations": [
+                    "Ps"
+                ]
             },
             "fr": {
                 "label": "Psaumes",
-                "abbr": "Ps"
+                "abbreviations": [
+                    "Ps"
+                ]
             }
         },
         "PRO": {
             "en": {
                 "label": "Proverbs",
-                "abbr": "Prov"
+                "abbreviations": [
+                    "Prov"
+                ]
             },
             "fr": {
                 "label": "Proverbes",
-                "abbr": "Pr"
+                "abbreviations": [
+                    "Pr"
+                ]
             }
         },
         "ECC": {
             "en": {
                 "label": "Ecclesiastes",
-                "abbr": "Eccl"
+                "abbreviations": [
+                    "Eccl",
+                    "Qoh"
+                ]
             },
             "fr": {
                 "label": "Ecclésiaste",
-                "abbr": "Qo"
+                "abbreviations": [
+                    "Qo"
+                ]
             }
         },
         "SNG": {
             "en": {
                 "label": "Song of Solomon",
-                "abbr": "Song"
+                "abbreviations": [
+                    "Song",
+                    "Cant"
+                ]
             },
             "fr": {
                 "label": "Cantique des Cantiques",
-                "abbr": "Ct"
+                "abbreviations": [
+                    "Ct"
+                ]
             }
         },
         "ISA": {
             "en": {
                 "label": "Isaiah",
-                "abbr": "Isa"
+                "abbreviations": [
+                    "Isa"
+                ]
             },
             "fr": {
                 "label": "Ésaïe",
-                "abbr": "Is"
+                "abbreviations": [
+                    "Is"
+                ]
             }
         },
         "JER": {
             "en": {
                 "label": "Jeremiah",
-                "abbr": "Jer"
+                "abbreviations": [
+                    "Jer"
+                ]
             },
             "fr": {
                 "label": "Jérémie",
-                "abbr": "Jr"
+                "abbreviations": [
+                    "Jr"
+                ]
             }
         },
         "LAM": {
             "en": {
                 "label": "Lamentations",
-                "abbr": "Lam"
+                "abbreviations": [
+                    "Lam"
+                ]
             },
             "fr": {
                 "label": "Lamentations de Jérémie",
-                "abbr": "Lm"
+                "abbreviations": [
+                    "Lm"
+                ]
             }
         },
         "EZE": {
             "en": {
                 "label": "Ezekiel",
-                "abbr": "Ezek"
+                "abbreviations": [
+                    "Ezek"
+                ]
             },
             "fr": {
                 "label": "Ézéchiel",
-                "abbr": "Ez"
+                "abbreviations": [
+                    "Ez"
+                ]
             }
         },
         "DAN": {
             "en": {
                 "label": "Daniel",
-                "abbr": "Dan"
+                "abbreviations": [
+                    "Dan"
+                ]
             },
             "fr": {
                 "label": "Daniel",
-                "abbr": "Dn"
+                "abbreviations": [
+                    "Dn"
+                ]
             }
         },
         "HOS": {
             "en": {
                 "label": "Hosea",
-                "abbr": "Hos"
+                "abbreviations": [
+                    "Hos"
+                ]
             },
             "fr": {
                 "label": "Osée",
-                "abbr": "Os"
+                "abbreviations": [
+                    "Os"
+                ]
             }
         },
         "JOE": {
             "en": {
                 "label": "Joel",
-                "abbr": "Joel"
+                "abbreviations": [
+                    "Joel"
+                ]
             },
             "fr": {
                 "label": "Joël",
-                "abbr": "Jl"
+                "abbreviations": [
+                    "Jl"
+                ]
             }
         },
         "AMO": {
             "en": {
                 "label": "Amos",
-                "abbr": "Amos"
+                "abbreviations": [
+                    "Amos"
+                ]
             },
             "fr": {
                 "label": "Amos",
-                "abbr": "Am"
+                "abbreviations": [
+                    "Am"
+                ]
             }
         },
         "OBA": {
             "en": {
                 "label": "Obadiah",
-                "abbr": "Obad"
+                "abbreviations": [
+                    "Obad"
+                ]
             },
             "fr": {
                 "label": "Abdias",
-                "abbr": "Ab"
+                "abbreviations": [
+                    "Ab"
+                ]
             }
         },
         "JON": {
             "en": {
                 "label": "Jonah",
-                "abbr": "Jonah"
+                "abbreviations": [
+                    "Jonah"
+                ]
             },
             "fr": {
                 "label": "Jonas",
-                "abbr": "Jon"
+                "abbreviations": [
+                    "Jon"
+                ]
             }
         },
         "MIC": {
             "en": {
                 "label": "Micah",
-                "abbr": "Mic"
+                "abbreviations": [
+                    "Mic"
+                ]
             },
             "fr": {
                 "label": "Michée",
-                "abbr": "Mi"
+                "abbreviations": [
+                    "Mi"
+                ]
             }
         },
         "NAH": {
             "en": {
                 "label": "Nahum",
-                "abbr": "Nah"
+                "abbreviations": [
+                    "Nah"
+                ]
             },
             "fr": {
                 "label": "Nahum",
-                "abbr": "Na"
+                "abbreviations": [
+                    "Na"
+                ]
             }
         },
         "HAB": {
             "en": {
                 "label": "Habakkuk",
-                "abbr": "Hab"
+                "abbreviations": [
+                    "Hab"
+                ]
             },
             "fr": {
                 "label": "Habacuc",
-                "abbr": "Ha"
+                "abbreviations": [
+                    "Ha"
+                ]
             }
         },
         "ZEP": {
             "en": {
                 "label": "Zephaniah",
-                "abbr": "Zeph"
+                "abbreviations": [
+                    "Zeph"
+                ]
             },
             "fr": {
                 "label": "Sophonie",
-                "abbr": "So"
+                "abbreviations": [
+                    "So"
+                ]
             }
         },
         "HAG": {
             "en": {
                 "label": "Haggai",
-                "abbr": "Hag"
+                "abbreviations": [
+                    "Hag"
+                ]
             },
             "fr": {
                 "label": "Aggée",
-                "abbr": "Ag"
+                "abbreviations": [
+                    "Ag"
+                ]
             }
         },
         "ZEC": {
             "en": {
                 "label": "Zechariah",
-                "abbr": "Zech"
+                "abbreviations": [
+                    "Zech"
+                ]
             },
             "fr": {
                 "label": "Zacharie",
-                "abbr": "Za"
+                "abbreviations": [
+                    "Za"
+                ]
             }
         },
         "MAL": {
             "en": {
                 "label": "Malachi",
-                "abbr": "Mal"
+                "abbreviations": [
+                    "Mal"
+                ]
             },
             "fr": {
                 "label": "Malachie",
-                "abbr": "Ml"
+                "abbreviations": [
+                    "Ml"
+                ]
             }
         },
         "MAT": {
             "en": {
                 "label": "Matthew",
-                "abbr": "Mt"
+                "abbreviations": [
+                    "Mt"
+                ]
             },
             "fr": {
                 "label": "Matthieu",
-                "abbr": "Mt"
+                "abbreviations": [
+                    "Mt"
+                ]
             }
         },
         "MRK": {
             "en": {
                 "label": "Mark",
-                "abbr": "Mk"
+                "abbreviations": [
+                    "Mk"
+                ]
             },
             "fr": {
                 "label": "Marc",
-                "abbr": "Mc"
+                "abbreviations": [
+                    "Mc"
+                ]
             }
         },
         "LUK": {
             "en": {
                 "label": "Luke",
-                "abbr": "Lk"
+                "abbreviations": [
+                    "Lk"
+                ]
             },
             "fr": {
                 "label": "Luc",
-                "abbr": "Lc"
+                "abbreviations": [
+                    "Lc"
+                ]
             }
         },
         "JHN": {
             "en": {
                 "label": "John",
-                "abbr": "Jn"
+                "abbreviations": [
+                    "Jn"
+                ]
             },
             "fr": {
                 "label": "Jean",
-                "abbr": "Jn"
+                "abbreviations": [
+                    "Jn"
+                ]
             }
         },
         "ACT": {
             "en": {
                 "label": "Acts",
-                "abbr": "Acts"
+                "abbreviations": [
+                    "Acts"
+                ]
             },
             "fr": {
                 "label": "Actes des Apôtres",
-                "abbr": "Ac"
+                "abbreviations": [
+                    "Ac"
+                ]
             }
         },
         "ROM": {
             "en": {
                 "label": "Romans",
-                "abbr": "Rom"
+                "abbreviations": [
+                    "Rom"
+                ]
             },
             "fr": {
                 "label": "Romains",
-                "abbr": "Rm"
+                "abbreviations": [
+                    "Rm"
+                ]
             }
         },
         "1CO": {
             "en": {
                 "label": "1 Corinthians",
-                "abbr": "1 Cor"
+                "abbreviations": [
+                    "1 Cor"
+                ]
             },
             "fr": {
                 "label": "1 Corinthiens",
-                "abbr": "1 Co"
+                "abbreviations": [
+                    "1 Co"
+                ]
             }
         },
         "2CO": {
             "en": {
                 "label": "2 Corinthians",
-                "abbr": "2 Cor"
+                "abbreviations": [
+                    "2 Cor"
+                ]
             },
             "fr": {
                 "label": "2 Corinthiens",
-                "abbr": "2 Co"
+                "abbreviations": [
+                    "2 Co"
+                ]
             }
         },
         "GAL": {
             "en": {
                 "label": "Galatians",
-                "abbr": "Gal"
+                "abbreviations": [
+                    "Gal"
+                ]
             },
             "fr": {
                 "label": "Galates",
-                "abbr": "Ga"
+                "abbreviations": [
+                    "Ga"
+                ]
             }
         },
         "EPH": {
             "en": {
                 "label": "Ephesians",
-                "abbr": "Eph"
+                "abbreviations": [
+                    "Eph"
+                ]
             },
             "fr": {
                 "label": "Éphésiens",
-                "abbr": "Ep"
+                "abbreviations": [
+                    "Ep"
+                ]
             }
         },
         "PHP": {
             "en": {
                 "label": "Philippians",
-                "abbr": "Phil"
+                "abbreviations": [
+                    "Phil"
+                ]
             },
             "fr": {
                 "label": "Philippiens",
-                "abbr": "Ph"
+                "abbreviations": [
+                    "Ph"
+                ]
             }
         },
         "COL": {
             "en": {
                 "label": "Colossians",
-                "abbr": "Col"
+                "abbreviations": [
+                    "Col"
+                ]
             },
             "fr": {
                 "label": "Colossiens",
-                "abbr": "Col"
+                "abbreviations": [
+                    "Col"
+                ]
             }
         },
         "1TH": {
             "en": {
                 "label": "1 Thessalonians",
-                "abbr": "1 Thess"
+                "abbreviations": [
+                    "1 Thess"
+                ]
             },
             "fr": {
                 "label": "1 Thessaloniciens",
-                "abbr": "1 Th"
+                "abbreviations": [
+                    "1 Th"
+                ]
             }
         },
         "2TH": {
             "en": {
                 "label": "2 Thessalonians",
-                "abbr": "2 Thess"
+                "abbreviations": [
+                    "2 Thess"
+                ]
             },
             "fr": {
                 "label": "2 Thessaloniciens",
-                "abbr": "2 Th"
+                "abbreviations": [
+                    "2 Th"
+                ]
             }
         },
         "1TI": {
             "en": {
                 "label": "1 Timothy",
-                "abbr": "1 Tim"
+                "abbreviations": [
+                    "1 Tim"
+                ]
             },
             "fr": {
                 "label": "1 Timothée",
-                "abbr": "1 Tm"
+                "abbreviations": [
+                    "1 Tm"
+                ]
             }
         },
         "2TI": {
             "en": {
                 "label": "2 Timothy",
-                "abbr": "2 Tim"
+                "abbreviations": [
+                    "2 Tim"
+                ]
             },
             "fr": {
                 "label": "2 Timothée",
-                "abbr": "2 Tm"
+                "abbreviations": [
+                    "2 Tm"
+                ]
             }
         },
         "TIT": {
             "en": {
                 "label": "Titus",
-                "abbr": "Tit"
+                "abbreviations": [
+                    "Tit"
+                ]
             },
             "fr": {
                 "label": "Tite",
-                "abbr": "Tt"
+                "abbreviations": [
+                    "Tt"
+                ]
             }
         },
         "PHM": {
             "en": {
                 "label": "Philemon",
-                "abbr": "Phm"
+                "abbreviations": [
+                    "Phm"
+                ]
             },
             "fr": {
                 "label": "Philémon",
-                "abbr": "Phm"
+                "abbreviations": [
+                    "Phm"
+                ]
             }
         },
         "HEB": {
             "en": {
                 "label": "Hebrews",
-                "abbr": "Heb"
+                "abbreviations": [
+                    "Heb"
+                ]
             },
             "fr": {
                 "label": "Hébreux",
-                "abbr": "He"
+                "abbreviations": [
+                    "He"
+                ]
             }
         },
         "JAS": {
             "en": {
                 "label": "James",
-                "abbr": "Jas"
+                "abbreviations": [
+                    "Jas"
+                ]
             },
             "fr": {
                 "label": "Jacques",
-                "abbr": "Jc"
+                "abbreviations": [
+                    "Jc"
+                ]
             }
         },
         "1PE": {
             "en": {
                 "label": "1 Peter",
-                "abbr": "1 Pet"
+                "abbreviations": [
+                    "1 Pet"
+                ]
             },
             "fr": {
                 "label": "1 Pierre",
-                "abbr": "1 P"
+                "abbreviations": [
+                    "1 P"
+                ]
             }
         },
         "2PE": {
             "en": {
                 "label": "2 Peter",
-                "abbr": "2 Pet"
+                "abbreviations": [
+                    "2 Pet"
+                ]
             },
             "fr": {
                 "label": "2 Pierre",
-                "abbr": "2 P"
+                "abbreviations": [
+                    "2 P"
+                ]
             }
         },
         "1JN": {
             "en": {
                 "label": "1 John",
-                "abbr": "1 Jn"
+                "abbreviations": [
+                    "1 Jn"
+                ]
             },
             "fr": {
                 "label": "1 Jean",
-                "abbr": "1 Jn"
+                "abbreviations": [
+                    "1 Jn"
+                ]
             }
         },
         "2JN": {
             "en": {
                 "label": "2 John",
-                "abbr": "2 Jn"
+                "abbreviations": [
+                    "2 Jn"
+                ]
             },
             "fr": {
                 "label": "2 Jean",
-                "abbr": "2 Jn"
+                "abbreviations": [
+                    "2 Jn"
+                ]
             }
         },
         "3JN": {
             "en": {
                 "label": "3 John",
-                "abbr": "3 Jn"
+                "abbreviations": [
+                    "3 Jn"
+                ]
             },
             "fr": {
                 "label": "3 Jean",
-                "abbr": "3 Jn"
+                "abbreviations": [
+                    "3 Jn"
+                ]
             }
         },
         "JUD": {
             "en": {
                 "label": "Jude",
-                "abbr": "Jude"
+                "abbreviations": [
+                    "Jude"
+                ]
             },
             "fr": {
                 "label": "Jude",
-                "abbr": "Jd"
+                "abbreviations": [
+                    "Jd"
+                ]
             }
         },
         "REV": {
             "en": {
                 "label": "Revelation",
-                "abbr": "Rev"
+                "abbreviations": [
+                    "Rev"
+                ]
             },
             "fr": {
                 "label": "Apocalypse",
-                "abbr": "Ap"
+                "abbreviations": [
+                    "Ap"
+                ]
             }
         }
     }
