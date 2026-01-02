@@ -1,12 +1,50 @@
 # Bible CLI Tool
 
-A command-line interface for reading the Bible in Greek (N1904), English, and French (TOB).
+A command-line interface for reading Greek (N1904), Hebrew (BHSA), English, and French (TOB) verses.
 
 ## Post-installation
 
 Add `biblecli` to your `$PATH` in your shell config file (e.g. `.zshrc`, `.bashrc`, `.bash_profile`):
 ```sh
 export PATH=$PATH:[YOUR-PATH-TO]/biblecli/bin
+```
+
+## Data Setup
+
+### 1. General Bible Data (N1904, LXX, BHSA)
+The tool uses the Text-Fabric library to manage Bible datasets.
+- **Automatic Download**: When you run the tool for the first time with an internet connection, it will automatically download the required datasets ([CenterBLC/N1904](https://github.com/CenterBLC/N1904), [CenterBLC/LXX](https://github.com/CenterBLC/LXX), [ETCBC/bhsa](https://github.com/ETCBC/bhsa)) to your home directory under `~/text-fabric-data`.
+- **Location**: You can find these datasets in `~/text-fabric-data/github/...`. The expected structure is:
+
+```
+~/text-fabric-data/
+└── github/
+    ├── CenterBLC/
+    │   ├── N1904/tf/[version]/   # Greek New Testament
+    │   └── LXX/tf/[version]/     # Septuagint
+    └── ETCBC/
+        └── bhsa/tf/[version]/    # Hebrew Masoretic Text
+```
+
+### 2. French TOB Data (Manual Setup and  Required)
+Due to copyright restrictions, the **Traduction Œcumenique de la Bible (TOB)** text is **not included** and cannot be automatically downloaded.
+
+To view French text, you must:
+1.  **Acquire a personal copy** of the TOB (e.g., from a personal PDF or e-book).
+2.  **Convert it** to a Text-Fabric compatible format. Extract text using Python libraries like `PyPDF` or `BeautifulSoup`. Use a tool like **TF Fabricator** to parse your source text and generate the TF files.
+3.  **Install it locally**:
+    -   Create a directory: `mkdir -p ~/text-fabric-data/TOB/1.0`
+    -   Place your generated TF files (e.g., `otype.tf`, `book.tf`, `chapter.tf`, `verse.tf`, `text.tf`, etc.) into this directory.
+
+The expected structure is:
+```
+~/text-fabric-data/TOB/1.0/
+    ├── otype.tf
+    ├── book.tf
+    ├── chapter.tf
+    ├── verse.tf
+    ├── text.tf
+    └── ...
 ```
 
 ## Usage
@@ -20,7 +58,9 @@ Display a verse (Greek and French are default):
 biblecli "Jn 1:1"
 ```
 
-Display a New Testament verse (Greek N1904 and French TOB are defaults):
+Display a New Testament verse from (as default)
+- Greek New Testament (Nestle 1904),
+- and French TOB:
 ```sh
 biblecli "Mc 1:1"
 ```
@@ -31,7 +71,10 @@ Marc 1:1
 Commencement de l'Evangile de Jésus Christ Fils de Dieu:
 ```
 
-Display an Old Testament verse (Masoretic Hebrew, Greek LXX, and French TOB are default):
+Display an Old Testament verse from (as default)
+- the Masoretic Hebrew (Biblia Hebraica Stuttgartensia),
+- the Greek Old testament (Septuaginta, 'LXX'),
+- and French TOB:
 ```sh
 biblecli "Gn 1:1"
 ```

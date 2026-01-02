@@ -12,9 +12,10 @@ from verse_printer import VersePrinter
 from reference_handler import ReferenceHandler
 from cli_help import CLIHelp
 
-# TOB Configuration
-BIBLECLI_DIR="/Users/ronan/Documents/Gemini/antigravity/biblecli"
-TOB_DIR = BIBLECLI_DIR+'/tob_tf/TOB/TraductionOecumenique/1.0'
+# Configuration
+# Determine project root relative to this script (src/main.py -> ..)
+BIBLECLI_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TOB_DIR = os.path.expanduser("~/text-fabric-data/TOB/1.0/")
 
 # Initialize Managers
 DATA_DIR = os.path.join(BIBLECLI_DIR, "data")
@@ -166,9 +167,6 @@ def handle_add(args):
         print(f"Error adding reference: {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")
-
-
-
 
 # Lazy Load N1904
 _n1904_app_instance = None
