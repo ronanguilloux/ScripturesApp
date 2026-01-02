@@ -187,37 +187,68 @@ def main():
         with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
             A = use("CenterBLC/N1904", version="1.0.0", silent=True)
             
-            # Load LXX (Manual Offline Priority)
-            lxx_path = os.path.expanduser("~/text-fabric-data/github/CenterBLC/LXX/tf/1935")
-            if os.path.exists(lxx_path):
-                 try:
-                     TF_LXX = Fabric(locations=[lxx_path])
-                     API_LXX = TF_LXX.load("", silent=True)
-                     LXX = OfflineLXXApp(API_LXX, normalizer)
-                 except Exception:
-                     LXX = None
-            else:
-                 # Try online as fallback (unlikely to work if rate limited)
-                 try:
-                     LXX = use("CenterBLC/LXX", version="1935", check=False, silent=True)
-                 except Exception:
-                     LXX = None
-
     except Exception as e:
-        print(f"Error loading apps (N1904/LXX): {e}")
+        print(f"Error loading Apps: {e}")
         sys.exit(1)
+
+    # Lazy Load LXX
+    _lxx_app_instance = None
+    _lxx_loaded = False
+
+    def get_lxx_app():
+        nonlocal _lxx_app_instance, _lxx_loaded
+        if _lxx_loaded:
+            return _lxx_app_instance
+            
+        _lxx_loaded = True
+        try:
+            with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
+                 # Load LXX (Manual Offline Priority)
+                lxx_path = os.path.expanduser("~/text-fabric-data/github/CenterBLC/LXX/tf/1935")
+                if os.path.exists(lxx_path):
+                     try:
+                         # We need to manually construct the API similar to 'use' but offline
+                         # 'use' returns an app object which wraps the API.
+                         # Our OfflineLXXApp wraps the API.
+                         # So we just need the API.
+                         TF_LXX = Fabric(locations=[lxx_path])
+                         API_LXX = TF_LXX.load("", silent=True) # Load default features
+                         # Previous code used load("", silent=True).
+                         # But let's follow safety.
+                         _lxx_app_instance = OfflineLXXApp(API_LXX, normalizer)
+                     except Exception:
+                         _lxx_app_instance = None
+                else:
+                     # Try online as fallback (unlikely to work if rate limited)
+                     try:
+                         # 'use' returns the App object directly. BUT our OfflineLXXApp expects an API object?
+                         # Wait, 'use' returns an App. 
+                         # Our specific logic uses 'OfflineLXXApp' to override nodeFromSectionStr.
+                         # If we get a standard App from 'use', we might need to wrap its API?
+                         # Or just use the App if it works. 
+                         # But for consistency, let's just stick to our Offline wrapper if possible,
+                         # or wrap the app.api.
+                         LXX_tf_app = use("CenterBLC/LXX", version="1935", check=False, silent=True)
+                         if LXX_tf_app:
+                             _lxx_app_instance = OfflineLXXApp(LXX_tf_app.api, normalizer)
+                     except Exception:
+                         _lxx_app_instance = None
+        except Exception as e:
+            # print(f"Error lazy loading LXX: {e}")
+            _lxx_app_instance = None
+            
+        return _lxx_app_instance
 
     show_english = False
     show_greek = True
     show_french = True
     
     # Initialize global printer
-    # Initialize global printer
     global printer
-    printer = VersePrinter(API_TOB, A, LXX, normalizer, ref_db)
+    printer = VersePrinter(API_TOB, A, normalizer, ref_db)
     
-    # Initialize Handler
-    handler = ReferenceHandler(A, LXX, normalizer, printer)
+    # Initialize Handler with Lazy Provider
+    handler = ReferenceHandler(A, get_lxx_app, normalizer, printer)
     
     if args.tr:
         if "en" in args.tr: show_english = True

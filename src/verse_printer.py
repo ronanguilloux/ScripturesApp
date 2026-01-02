@@ -1,8 +1,10 @@
 class VersePrinter:
-    def __init__(self, tob_api, n1904_app, lxx_app, normalizer, reference_db):
+    def __init__(self, tob_api, n1904_app, normalizer, reference_db):
         self.tob_api = tob_api
         self.app = n1904_app
-        self.lxx = lxx_app
+        self.lxx = None # Removed constructor arg, but kept prop for strict compat or just remove?
+        # Actually print_verse uses source_app passed at runtime. 
+        # But let's keep self.lxx = None just in case any internal logic accessed it (checked code, it didn't seem to rely on self.lxx except via source_app arg)
         self.normalizer = normalizer
         self.ref_db = reference_db
 

@@ -1,7 +1,7 @@
 class ReferenceHandler:
-    def __init__(self, n1904_app, lxx_app, normalizer, verse_printer):
+    def __init__(self, n1904_app, lxx_provider, normalizer, verse_printer):
         self.app = n1904_app
-        self.lxx = lxx_app
+        self.lxx_provider = lxx_provider # Callable that returns LXX app or None
         self.normalizer = normalizer
         self.printer = verse_printer
 
@@ -15,11 +15,13 @@ class ReferenceHandler:
             if isinstance(node, int):
                 return node, self.app
 
-        # Try LXX
-        if self.lxx:
-            node = self.lxx.nodeFromSectionStr(ref_str)
+        # Try LXX (Lazy Load)
+        if self.lxx_provider:
+            lxx_app = self.lxx_provider()
+            if lxx_app:
+                node = lxx_app.nodeFromSectionStr(ref_str)
             if node and isinstance(node, int):
-                return node, self.lxx
+                return node, lxx_app
         
         return None, None
 
@@ -107,16 +109,18 @@ class ReferenceHandler:
                                 self.printer.print_verse(node=verse_node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=self.app)
                             return
                         
-                        # Try LXX Chapter
-                        if self.lxx:
-                             # Use the app's lookup since it handles normalization and overrides
-                             lxx_node = self.lxx.nodeFromSectionStr(f"{book_name} {chapter_num}")
-                             
-                             if lxx_node and self.lxx.api.F.otype.v(lxx_node) == 'chapter':
-                                 verse_nodes = self.lxx.api.L.d(lxx_node, otype='verse')
-                                 for verse_node in verse_nodes:
-                                     self.printer.print_verse(node=verse_node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=self.lxx)
-                                 return
+                        # Try LXX Chapter (Lazy Load)
+                        if self.lxx_provider:
+                             lxx_app = self.lxx_provider()
+                             if lxx_app:
+                                 # Use the app's lookup since it handles normalization and overrides
+                                 lxx_node = lxx_app.nodeFromSectionStr(f"{book_name} {chapter_num}")
+                                 
+                                 if lxx_node and lxx_app.api.F.otype.v(lxx_node) == 'chapter':
+                                     verse_nodes = lxx_app.api.L.d(lxx_node, otype='verse')
+                                     for verse_node in verse_nodes:
+                                         self.printer.print_verse(node=verse_node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=lxx_app)
+                                     return
 
                         # Fallback to TOB extraction loop
                         v = 1

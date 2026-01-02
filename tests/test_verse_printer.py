@@ -53,8 +53,8 @@ def mock_ref_db():
     return mock
 
 @pytest.fixture
-def printer(mock_tob_api, mock_n1904_app, mock_lxx_app, normalizer, mock_ref_db):
-    return VersePrinter(mock_tob_api, mock_n1904_app, mock_lxx_app, normalizer, mock_ref_db)
+def printer(mock_tob_api, mock_n1904_app, normalizer, mock_ref_db):
+    return VersePrinter(mock_tob_api, mock_n1904_app, normalizer, mock_ref_db)
 
 def test_lxx_book_name_resolution(printer, mock_tob_api):
     # Test that passing "Gen" (LXX name) correctly looks up "Genèse" in TOB
