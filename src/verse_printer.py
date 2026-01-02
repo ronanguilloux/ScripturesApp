@@ -194,8 +194,22 @@ class VersePrinter:
         if not book_fr:
             book_fr = book_en
         
+        # Determine Header Language
+        header_book_name = book_fr
+        
+        if show_english:
+             # Prefer English name if English translation is requested
+             if book_code:
+                 raw_en = self.normalizer.code_to_n1904.get(book_code)
+                 if raw_en:
+                      header_book_name = raw_en.replace("_", " ")
+                 else:
+                      header_book_name = book_en
+             else:
+                 header_book_name = book_en
+
         # Header
-        print(f"\n{book_fr} {chapter}:{verse}")
+        print(f"\n{header_book_name} {chapter}:{verse}")
         
         # Hebrew Text
         if show_hebrew:

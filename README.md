@@ -53,6 +53,21 @@ You can use the `biblecli` script to execute commands. It will automatically set
 
 ### Basic Commands
 
+Display an Old Testament verse from (as default)
+- the Masoretic Hebrew (Biblia Hebraica Stuttgartensia),
+- the Greek Old testament (Septuaginta, 'LXX'),
+- and French TOB:
+```sh
+biblecli "Gn 1:1" --tr gr hb fr
+```
+Output:
+```
+Genesis 1:1
+בְּ רֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַ שָּׁמַ֖יִם וְ אֵ֥ת הָ אָֽרֶץ
+ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν 
+Au commencement, Dieu créa le ciel et la terre.
+```
+
 Display a verse (Greek and French are default):
 ```sh
 biblecli "Jn 1:1"
@@ -62,28 +77,14 @@ Display a New Testament verse from (as default)
 - Greek New Testament (Nestle 1904),
 - and French TOB:
 ```sh
-biblecli "Mc 1:1"
-```
-Output:
-```
-Marc 1:1
-Ἀρχὴ τοῦ εὐαγγελίου Ἰησοῦ Χριστοῦ (Υἱοῦ Θεοῦ). 
-Commencement de l'Evangile de Jésus Christ Fils de Dieu:
+biblecli "Mk 1:1" --tr en gr
 ```
 
-Display an Old Testament verse from (as default)
-- the Masoretic Hebrew (Biblia Hebraica Stuttgartensia),
-- the Greek Old testament (Septuaginta, 'LXX'),
-- and French TOB:
-```sh
-biblecli "Gn 1:1"
-```
 Output:
 ```
-Genèse 1:1
-בְּ רֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַ שָּׁמַ֖יִם וְ אֵ֥ת הָ אָֽרֶץ
-ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν 
-Au commencement, Dieu créa le ciel et la terre.
+Mark 1:1
+Ἀρχὴ τοῦ εὐαγγελίου Ἰησοῦ Χριστοῦ (Υἱοῦ Θεοῦ). 
+[The] beginning of the gospel of Jesus Christ Son of God
 ```
 
 Display a verse range:
@@ -103,7 +104,9 @@ biblecli list books
 
 ### Translations
 
+
 Use the `-t` or `--tr` option to specify translations. Supported: `en` (English), `fr` (French TOB), `gr` (Greek N1904).
+When no translation is specified, the default is `fr` (French TOB). 
 
 Show only English:
 ```sh
@@ -121,12 +124,39 @@ The tool supports verse-level cross-references from OpenBible data.
 
 Show cross-reference list:
 ```sh
-biblecli "Jn 1:1" -c
+biblecli "Mc 7:8" -c
+```
+
+Output:
+```
+"Marc 7:8
+ἀφέντες τὴν ἐντολὴν τοῦ Θεοῦ κρατεῖτε τὴν παράδοσιν τῶν ἀνθρώπων. 
+Vous laissez de côté le commandement de Dieu et vous vous attachez à la tradition des hommes.»
+
+––––––––––
+    Other: 
+        Is 1:12
+        Mc 7:3-4
 ```
 
 Show cross-references with full verse text:
 ```sh
-biblecli "Jn 1:1" -f
+biblecli "Mc 7:8" -f
+```
+
+Output:
+```
+Marc 7:8
+ἀφέντες τὴν ἐντολὴν τοῦ Θεοῦ κρατεῖτε τὴν παράδοσιν τῶν ἀνθρώπων. 
+Vous laissez de côté le commandement de Dieu et vous vous attachez à la tradition des hommes.»
+
+––––––––––
+    Other: 
+        Is 1:12
+            Quand vous venez vous présenter devant moi, qui vous demande de fouler mes parvis?
+        Mc 7:3-4
+            En effet, les Pharisiens, comme tous les Juifs, ne mangent pas sans s'être lavé soigneusement les mains, par attachement à la tradition des anciens;
+            en revenant du marché, ils ne mangent pas sans avoir fait des ablutions; et il y a beaucoup d'autres pratiques traditionnelles auxquelles ils sont attachés: lavages rituels des coupes, des cruches et des plats.
 ```
 
 Filter cross-references by source (e.g., only TOB notes):
@@ -134,6 +164,23 @@ Filter cross-references by source (e.g., only TOB notes):
 biblecli "Mk 1:1" -f -s tob
 ```
 
+Output:
+```
+Marc 1:1
+Ἀρχὴ τοῦ εὐαγγελίου Ἰησοῦ Χριστοῦ (Υἱοῦ Θεοῦ). 
+Commencement de l'Evangile de Jésus Christ Fils de Dieu:
+
+––––––––––
+    Notes:
+        Evangile 1.14 ; 8.35 ; 10.29 ; 13.10 ; 14.9 ; 16.15 ; Rm 1.1 ; 15.19 ; 16.25.–Christ 8.29-30 ; 14.61-62.–Fils de Dieu 1.11 ; 3.11 ; 5.7 ; 9.7 ; 14.61-62 ; 15.39 ; voir Mt 14.33+.
+
+    Parallel: 
+        Mc 1:14
+            Après que Jean eut été livré, Jésus vint en Galilée. Il proclamait l'Evangile de Dieu et disait:
+        Mc 8:35
+            En effet,...
+...
+```
 ### Adding Personal References
 
 You can add your own cross-references and notes to a personal collection (stored as a JSON file in `data/`).
@@ -160,10 +207,10 @@ This will automatically create/update `data/references_nt_personal.json`.
 
 ### Shortcuts
 
-For convenience, you can use the `tob` command to quickly access the TOB French translation and notes. It is equivalent to `biblecli ... -f -s tob`.
+For convenience, you can use the `tob` command to quickly access the TOB French translation and notes. It is equivalent to `biblecli ... -s tob`.
 
 ```sh
-tob "Mk 1:1"
+tob "Mc 1:1" # equivalent to `biblecli "Mk 1:1" -s tob` - displays French TOB
 ```
 
 ### Abbreviations
