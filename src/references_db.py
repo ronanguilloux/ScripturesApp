@@ -3,9 +3,6 @@ import os
 import glob
 from collections import defaultdict
 
-
-
-
 class ReferenceDatabase:
     def __init__(self, data_dir, normalizer):
         self.data_dir = data_dir
