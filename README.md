@@ -10,16 +10,26 @@ Display a verse from (as default)
 - plus the French TOB:
 
 ```sh
-biblecli "Gn 1:1" --tr gr hb fr
+biblecli "Gn 1:1-3" --tr gr hb fr
 ```
+
 Output:
 ```
-Genesis 1:1
+Genèse 1:1
 בְּ רֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַ שָּׁמַ֖יִם וְ אֵ֥ת הָ אָֽרֶץ
 ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν 
 Au commencement, Dieu créa le ciel et la terre.
-```
 
+Genèse 1:2
+וְ הָ אָ֗רֶץ הָיְתָ֥ה תֹ֨הוּ֙ וָ בֹ֔הוּ וְ חֹ֖שֶׁךְ עַל פְּנֵ֣י תְהֹ֑ום וְ ר֣וּחַ אֱלֹהִ֔ים מְרַחֶ֖פֶת עַל פְּנֵ֥י הַ מָּֽיִם
+ἡ δὲ γῆ ἦν ἀόρατος καὶ ἀκατασκεύαστος καὶ σκότος ἐπάνω τῆς ἀβύσσου καὶ πνεῦμα θεοῦ ἐπεφέρετο ἐπάνω τοῦ ὕδατος 
+La terre était déserte et vide, et la ténèbre à la surface de l'abîme; le souffle de Dieu planait à la surface des eaux,
+
+Genèse 1:3
+וַ יֹּ֥אמֶר אֱלֹהִ֖ים יְהִ֣י אֹ֑ור וַֽ יְהִי אֹֽור
+καὶ εἶπεν ὁ θεός γενηθήτω φῶς καὶ ἐγένετο φῶς 
+et Dieu dit: «Que la lumière soit!» Et la lumière fut.
+```
 
 # Installation
 
