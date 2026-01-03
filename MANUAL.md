@@ -8,10 +8,12 @@ BIBLECLI(1)                      Bible CLI Manual
 NAME
        biblecli - Command-line interface for the Greek New Testament & Hebrew Bible
        tob      - Shortcut for displaying French TOB translation
+       bj       - Shortcut for displaying French Bible de Jérusalem translation
 
 SYNOPSIS
        biblecli [COMMAND | REFERENCE] [ARGS...] [OPTIONS]
        tob      [REFERENCE] [OPTIONS]
+       bj       [REFERENCE] [OPTIONS]
 
 DESCRIPTION
        biblecli is a tool for reading and researching the Bible in its original
@@ -20,6 +22,7 @@ DESCRIPTION
        - Hebrew Masoretic Text (BHSA - Biblia Hebraica Stuttgartensia)
        - Septuagint (LXX - Rahlfs 1935)
        - French Traduction Œcumenique de la Bible (TOB)
+       - Bible de Jérusalem (BJ)
        - English Berean Interlinear Bible
 
        It features smart lazy-loading of datasets, verse-level cross-references,
@@ -48,6 +51,10 @@ SHORTCUTS
               Equivalent to `biblecli [REFERENCE] -s tob`. 
               Focuses on the French TOB translation. Use -f to view notes.
 
+       bj [REFERENCE]
+              Equivalent to `biblecli [REFERENCE] -s bj`.
+              Focuses on the French BJ translation.
+
 REFERENCES
        Flexible reference parsing supports English and French abbreviations:
        - Single verse:  "Jn 1:1", "Jean 1:1", "Gen 1:1"
@@ -63,7 +70,7 @@ OPTIONS
               Specify translations to display. Multiple values allowed.
               Codes:
               - en: English (Berean)
-              - fr: French (TOB)
+              - fr: French (TOB by default. Use -s bj for Bible de Jérusalem)
               - gr: Greek (N1904 for NT, LXX for OT)
               - hb: Hebrew (BHSA)
 
@@ -92,6 +99,10 @@ DATA SOURCES
        TOB (French)
               Traduction Œcumenique de la Bible.
               Note: Requires manual setup due to copyright. See ADD_SOURCES.md.
+
+       BJ (French)
+              Bible de Jérusalem.
+              Note: Requires manual setup (EPUB conversion). See ADD_SOURCES.md.
 
        OpenBible
               Cross-reference data provided by OpenBible.info.

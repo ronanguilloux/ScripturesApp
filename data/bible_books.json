@@ -13,7 +13,8 @@
                 "label": "Genèse",
                 "abbreviations": [
                     "Gn"
-                ]
+                ],
+                "bj": "La Genèse"
             }
         },
         "EXO": {
@@ -28,7 +29,8 @@
                 "label": "Exode",
                 "abbreviations": [
                     "Ex"
-                ]
+                ],
+                "bj": "L'Exode"
             }
         },
         "LEV": {
@@ -42,7 +44,8 @@
                 "label": "Lévitique",
                 "abbreviations": [
                     "Lv"
-                ]
+                ],
+                "bj": "Le Lévitique"
             }
         },
         "NUM": {
@@ -57,7 +60,8 @@
                 "label": "Nombres",
                 "abbreviations": [
                     "Nb"
-                ]
+                ],
+                "bj": "Les Nombres"
             }
         },
         "DEU": {
@@ -72,7 +76,8 @@
                 "label": "Deutéronome",
                 "abbreviations": [
                     "Dt"
-                ]
+                ],
+                "bj": "Le Deutéronome"
             }
         },
         "JOS": {
@@ -87,7 +92,8 @@
                 "label": "Josué",
                 "abbreviations": [
                     "Jos"
-                ]
+                ],
+                "bj": "Le livre de Josué"
             }
         },
         "JDG": {
@@ -102,7 +108,8 @@
                 "label": "Juges",
                 "abbreviations": [
                     "Jg"
-                ]
+                ],
+                "bj": "Le livre des Juges"
             }
         },
         "RUT": {
@@ -116,7 +123,8 @@
                 "label": "Ruth",
                 "abbreviations": [
                     "Rt"
-                ]
+                ],
+                "bj": "Le livre de Ruth"
             }
         },
         "1SA": {
@@ -131,7 +139,8 @@
                 "label": "1 Samuel",
                 "abbreviations": [
                     "1 S"
-                ]
+                ],
+                "bj": "Premier livre de Samuel"
             }
         },
         "2SA": {
@@ -146,7 +155,8 @@
                 "label": "2 Samuel",
                 "abbreviations": [
                     "2 S"
-                ]
+                ],
+                "bj": "Deuxième livre de Samuel"
             }
         },
         "1KI": {
@@ -162,7 +172,8 @@
                 "label": "1 Rois",
                 "abbreviations": [
                     "1 R"
-                ]
+                ],
+                "bj": "Premier livre des Rois"
             }
         },
         "2KI": {
@@ -179,7 +190,8 @@
                 "label": "2 Rois",
                 "abbreviations": [
                     "2 R"
-                ]
+                ],
+                "bj": "Deuxième livre des Rois"
             }
         },
         "1CH": {
@@ -195,7 +207,8 @@
                 "label": "1 Chroniques",
                 "abbreviations": [
                     "1 Ch"
-                ]
+                ],
+                "bj": "Premier livre des Chroniques"
             }
         },
         "2CH": {
@@ -211,7 +224,8 @@
                 "label": "2 Chroniques",
                 "abbreviations": [
                     "2 Ch"
-                ]
+                ],
+                "bj": "Deuxième livre des Chroniques"
             }
         },
         "EZR": {
@@ -226,7 +240,8 @@
                 "label": "Esdras",
                 "abbreviations": [
                     "Esd"
-                ]
+                ],
+                "bj": "Le livre d'Esdras"
             }
         },
         "NEH": {
@@ -241,7 +256,8 @@
                 "label": "Néhémie",
                 "abbreviations": [
                     "Ne"
-                ]
+                ],
+                "bj": "Le livre de Néhémie"
             }
         },
         "EST": {
@@ -255,7 +271,8 @@
                 "label": "Esther",
                 "abbreviations": [
                     "Est"
-                ]
+                ],
+                "bj": "Esther"
             }
         },
         "JOB": {
@@ -270,7 +287,8 @@
                 "label": "Job",
                 "abbreviations": [
                     "Jb"
-                ]
+                ],
+                "bj": "Job"
             }
         },
         "PSA": {
@@ -285,7 +303,8 @@
                 "label": "Psaumes",
                 "abbreviations": [
                     "Ps"
-                ]
+                ],
+                "bj": "Les Psaumes"
             }
         },
         "PRO": {
@@ -300,7 +319,8 @@
                 "label": "Proverbes",
                 "abbreviations": [
                     "Pr"
-                ]
+                ],
+                "bj": "Les Proverbes"
             }
         },
         "ECC": {
@@ -315,7 +335,8 @@
                 "label": "Ecclésiaste",
                 "abbreviations": [
                     "Qo"
-                ]
+                ],
+                "bj": "L'Ecclésiaste"
             }
         },
         "SNG": {
@@ -331,7 +352,8 @@
                 "label": "Cantique des Cantiques",
                 "abbreviations": [
                     "Ct"
-                ]
+                ],
+                "bj": "Le Cantique des Cantiques"
             }
         },
         "ISA": {
@@ -346,7 +368,8 @@
                 "label": "Ésaïe",
                 "abbreviations": [
                     "Is"
-                ]
+                ],
+                "bj": "Isaïe"
             }
         },
         "JER": {
@@ -361,7 +384,8 @@
                 "label": "Jérémie",
                 "abbreviations": [
                     "Jr"
-                ]
+                ],
+                "bj": "Jérémie"
             }
         },
         "LAM": {
@@ -376,7 +400,8 @@
                 "label": "Lamentations de Jérémie",
                 "abbreviations": [
                     "Lm"
-                ]
+                ],
+                "bj": "Les Lamentations"
             }
         },
         "EZE": {
@@ -391,7 +416,8 @@
                 "label": "Ézéchiel",
                 "abbreviations": [
                     "Ez"
-                ]
+                ],
+                "bj": "Ezéchiel"
             }
         },
         "DAN": {
@@ -405,7 +431,8 @@
                 "label": "Daniel",
                 "abbreviations": [
                     "Dn"
-                ]
+                ],
+                "bj": "Daniel"
             }
         },
         "HOS": {
@@ -419,7 +446,8 @@
                 "label": "Osée",
                 "abbreviations": [
                     "Os"
-                ]
+                ],
+                "bj": "Osée"
             }
         },
         "JOE": {
@@ -433,7 +461,8 @@
                 "label": "Joël",
                 "abbreviations": [
                     "Jl"
-                ]
+                ],
+                "bj": "Joël"
             }
         },
         "AMO": {
@@ -447,7 +476,8 @@
                 "label": "Amos",
                 "abbreviations": [
                     "Am"
-                ]
+                ],
+                "bj": "Amos"
             }
         },
         "OBA": {
@@ -462,7 +492,8 @@
                 "label": "Abdias",
                 "abbreviations": [
                     "Ab"
-                ]
+                ],
+                "bj": "Abdias"
             }
         },
         "JON": {
@@ -477,7 +508,8 @@
                 "label": "Jonas",
                 "abbreviations": [
                     "Jon"
-                ]
+                ],
+                "bj": "Jonas"
             }
         },
         "MIC": {
@@ -492,7 +524,8 @@
                 "label": "Michée",
                 "abbreviations": [
                     "Mi"
-                ]
+                ],
+                "bj": "Michée"
             }
         },
         "NAH": {
@@ -506,7 +539,8 @@
                 "label": "Nahum",
                 "abbreviations": [
                     "Na"
-                ]
+                ],
+                "bj": "Nahum"
             }
         },
         "HAB": {
@@ -521,7 +555,8 @@
                 "label": "Habacuc",
                 "abbreviations": [
                     "Ha"
-                ]
+                ],
+                "bj": "Habaquq"
             }
         },
         "ZEP": {
@@ -536,7 +571,8 @@
                 "label": "Sophonie",
                 "abbreviations": [
                     "So"
-                ]
+                ],
+                "bj": "Sophonie"
             }
         },
         "HAG": {
@@ -550,7 +586,8 @@
                 "label": "Aggée",
                 "abbreviations": [
                     "Ag"
-                ]
+                ],
+                "bj": "Aggée"
             }
         },
         "ZEC": {
@@ -565,7 +602,8 @@
                 "label": "Zacharie",
                 "abbreviations": [
                     "Za"
-                ]
+                ],
+                "bj": "Zacharie"
             }
         },
         "MAL": {
@@ -580,7 +618,8 @@
                 "label": "Malachie",
                 "abbreviations": [
                     "Ml"
-                ]
+                ],
+                "bj": "Malachie"
             }
         },
         "MAT": {
@@ -594,7 +633,8 @@
                 "label": "Matthieu",
                 "abbreviations": [
                     "Mt"
-                ]
+                ],
+                "bj": "L'Evangile selon Saint Matthieu"
             }
         },
         "MRK": {
@@ -608,7 +648,8 @@
                 "label": "Marc",
                 "abbreviations": [
                     "Mc"
-                ]
+                ],
+                "bj": "L'Evangile selon Saint Marc"
             }
         },
         "LUK": {
@@ -622,7 +663,8 @@
                 "label": "Luc",
                 "abbreviations": [
                     "Lc"
-                ]
+                ],
+                "bj": "L'Evangile selon Saint Luc"
             }
         },
         "JHN": {
@@ -636,7 +678,8 @@
                 "label": "Jean",
                 "abbreviations": [
                     "Jn"
-                ]
+                ],
+                "bj": "L'Evangile selon Saint Jean"
             }
         },
         "ACT": {
@@ -650,7 +693,8 @@
                 "label": "Actes des Apôtres",
                 "abbreviations": [
                     "Ac"
-                ]
+                ],
+                "bj": "Les Actes des Apôtres"
             }
         },
         "ROM": {
@@ -664,7 +708,8 @@
                 "label": "Romains",
                 "abbreviations": [
                     "Rm"
-                ]
+                ],
+                "bj": "Epître aux Romains"
             }
         },
         "1CO": {
@@ -678,7 +723,8 @@
                 "label": "1 Corinthiens",
                 "abbreviations": [
                     "1 Co"
-                ]
+                ],
+                "bj": "Premier Epître aux Corinthiens"
             }
         },
         "2CO": {
@@ -692,7 +738,8 @@
                 "label": "2 Corinthiens",
                 "abbreviations": [
                     "2 Co"
-                ]
+                ],
+                "bj": "Deuxième Epître aux Corinthiens"
             }
         },
         "GAL": {
@@ -706,7 +753,8 @@
                 "label": "Galates",
                 "abbreviations": [
                     "Ga"
-                ]
+                ],
+                "bj": "Epître aux Galates"
             }
         },
         "EPH": {
@@ -720,7 +768,8 @@
                 "label": "Éphésiens",
                 "abbreviations": [
                     "Ep"
-                ]
+                ],
+                "bj": "Epître aux Ephésiens"
             }
         },
         "PHP": {
@@ -734,7 +783,8 @@
                 "label": "Philippiens",
                 "abbreviations": [
                     "Ph"
-                ]
+                ],
+                "bj": "Epître aux Philippiens"
             }
         },
         "COL": {
@@ -748,7 +798,8 @@
                 "label": "Colossiens",
                 "abbreviations": [
                     "Col"
-                ]
+                ],
+                "bj": "Epître aux Colossiens"
             }
         },
         "1TH": {
@@ -762,7 +813,8 @@
                 "label": "1 Thessaloniciens",
                 "abbreviations": [
                     "1 Th"
-                ]
+                ],
+                "bj": "Premier Epître aux Théssaloniciens"
             }
         },
         "2TH": {
@@ -776,7 +828,8 @@
                 "label": "2 Thessaloniciens",
                 "abbreviations": [
                     "2 Th"
-                ]
+                ],
+                "bj": "Deuxième Epître aux Théssaloniciens"
             }
         },
         "1TI": {
@@ -790,7 +843,8 @@
                 "label": "1 Timothée",
                 "abbreviations": [
                     "1 Tm"
-                ]
+                ],
+                "bj": "Premier Epître à Timothée"
             }
         },
         "2TI": {
@@ -804,7 +858,8 @@
                 "label": "2 Timothée",
                 "abbreviations": [
                     "2 Tm"
-                ]
+                ],
+                "bj": "Deuxième Epître à Timothée"
             }
         },
         "TIT": {
@@ -818,7 +873,8 @@
                 "label": "Tite",
                 "abbreviations": [
                     "Tt"
-                ]
+                ],
+                "bj": "Epître à Tite"
             }
         },
         "PHM": {
@@ -832,7 +888,8 @@
                 "label": "Philémon",
                 "abbreviations": [
                     "Phm"
-                ]
+                ],
+                "bj": "Epître à Philémon"
             }
         },
         "HEB": {
@@ -846,7 +903,8 @@
                 "label": "Hébreux",
                 "abbreviations": [
                     "He"
-                ]
+                ],
+                "bj": "Epître aux Hébreux"
             }
         },
         "JAS": {
@@ -860,7 +918,8 @@
                 "label": "Jacques",
                 "abbreviations": [
                     "Jc"
-                ]
+                ],
+                "bj": "Epître de Saint Jacques"
             }
         },
         "1PE": {
@@ -874,7 +933,8 @@
                 "label": "1 Pierre",
                 "abbreviations": [
                     "1 P"
-                ]
+                ],
+                "bj": "Premier Epître de Saint Pierre"
             }
         },
         "2PE": {
@@ -888,7 +948,8 @@
                 "label": "2 Pierre",
                 "abbreviations": [
                     "2 P"
-                ]
+                ],
+                "bj": "Deuxième Epître de Saint Pierre"
             }
         },
         "1JN": {
@@ -902,7 +963,8 @@
                 "label": "1 Jean",
                 "abbreviations": [
                     "1 Jn"
-                ]
+                ],
+                "bj": "Premier Epître de Saint Jean"
             }
         },
         "2JN": {
@@ -916,7 +978,8 @@
                 "label": "2 Jean",
                 "abbreviations": [
                     "2 Jn"
-                ]
+                ],
+                "bj": "Deuxième Epître de Saint Jean"
             }
         },
         "3JN": {
@@ -930,7 +993,8 @@
                 "label": "3 Jean",
                 "abbreviations": [
                     "3 Jn"
-                ]
+                ],
+                "bj": "Troisième Epître de Saint Jean"
             }
         },
         "JUD": {
@@ -944,7 +1008,8 @@
                 "label": "Jude",
                 "abbreviations": [
                     "Jd"
-                ]
+                ],
+                "bj": "Epître de Saint Jude"
             }
         },
         "REV": {
@@ -958,8 +1023,37 @@
                 "label": "Apocalypse",
                 "abbreviations": [
                     "Ap"
-                ]
+                ],
+                "bj": "L'Apocalypse"
             }
+        },
+        "TOB": {
+            "en": { "label": "Tobit", "abbreviations": ["Tob"] },
+            "fr": { "label": "Tobie", "abbreviations": ["Tb"], "bj": "Tobie" }
+        },
+        "JDT": {
+            "en": { "label": "Judith", "abbreviations": ["Jdt"] },
+            "fr": { "label": "Judith", "abbreviations": ["Jdt"], "bj": "Judith" }
+        },
+        "1MA": {
+            "en": { "label": "1 Maccabees", "abbreviations": ["1 Macc"] },
+            "fr": { "label": "1 Macchabées", "abbreviations": ["1 M"], "bj": "Premier livre des Maccabées" }
+        },
+        "2MA": {
+            "en": { "label": "2 Maccabees", "abbreviations": ["2 Macc"] },
+            "fr": { "label": "2 Macchabées", "abbreviations": ["2 M"], "bj": "Deuxième livre des Maccabées" }
+        },
+        "WIS": {
+            "en": { "label": "Wisdom", "abbreviations": ["Wis"] },
+            "fr": { "label": "Sagesse", "abbreviations": ["Sg"], "bj": "Sagesse de Salomon" }
+        },
+        "SIR": {
+            "en": { "label": "Sirach", "abbreviations": ["Sir"] },
+            "fr": { "label": "Ecclésiastique", "abbreviations": ["Si"], "bj": "L'Ecclésiastique" }
+        },
+        "BAR": {
+            "en": { "label": "Baruch", "abbreviations": ["Bar"] },
+            "fr": { "label": "Baruch", "abbreviations": ["Ba"], "bj": "Baruch" }
         }
     }
 }

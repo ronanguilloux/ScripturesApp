@@ -1,8 +1,10 @@
 class VersePrinter:
-    def __init__(self, tob_provider, n1904_provider, normalizer, reference_db, bhsa_provider=None):
+    def __init__(self, tob_provider, n1904_provider, normalizer, reference_db, bhsa_provider=None, bj_provider=None):
         self.tob_provider = tob_provider
         self.n1904_provider = n1904_provider
+        self.bj_provider = bj_provider
         self._tob_api = None
+        self._bj_api = None
         self._n1904_app = None
         self.lxx = None 
         self.normalizer = normalizer
@@ -14,6 +16,12 @@ class VersePrinter:
         if self._tob_api is None and self.tob_provider:
             self._tob_api = self.tob_provider()
         return self._tob_api
+        
+    @property
+    def bj_api(self):
+        if self._bj_api is None and self.bj_provider:
+            self._bj_api = self.bj_provider()
+        return self._bj_api
 
     @property
     def app(self):
@@ -40,6 +48,85 @@ class VersePrinter:
             text = " ".join([bhsa_app.api.F.g_word_utf8.v(w) for w in words])
             return text
         return None
+
+    def get_bj_text(self, book_en, chapter_num, verse_num):
+        if not self.bj_api:
+            return ""
+        
+        # Determine BJ book label from "bj" entry in bible_books.json
+        # 1. Normalize book_en to code
+        book_code = self.normalizer.n1904_to_code.get(book_en)
+        if not book_code:
+             # Try abbreviation
+             canon = self.normalizer.abbreviations.get(book_en)
+             if canon:
+                 book_code = self.normalizer.n1904_to_code.get(canon)
+        
+        if not book_code:
+            return f"[BJ: Unknown Book '{book_en}']"
+            
+        # 2. Get BJ label from JSON data (loaded in normalizer?)
+        # Normalizer has `code_to_fr_abbr` but not `code_to_bj` directly exposed?
+        # We might need to load it or use a mapping.
+        # But wait, BJ TF uses the *label* as the value of the 'book' feature in my conversion?
+        # Yes: `f.write(f"{d['id']}\t{d['book']}\n")` where `d['book']` was the Code (e.g. "GEN")?
+        # Let me re-verify convert_bj_epub.py.
+        # I set `self.current_book_code = code` (GEN, EXO).
+        # And I used that for the feature value. 
+        # So BJ TF uses STANDARD CODES (GEN, EXO) for the `book` feature!
+        # It does NOT use "La Genèse" as the feature value.
+        # It uses Codes.
+        # So I just need to match `book_code`.
+        
+        F = self.bj_api.F
+        L = self.bj_api.L
+        
+        # 1. Find book node
+        # In BJ TF, book feature is on book node.
+        # We can iterate book nodes.
+        book_node = None
+        for n in F.otype.s('book'):
+            if F.book.v(n) == book_code:
+                book_node = n
+                break
+                
+        if not book_node:
+             # Try fallback to French name just in case my memory is wrong?
+             # No, verify_bj output showed `Node ...: [JOB 19:14]`. "JOB" is code.
+             return f"[BJ: Book '{book_code}' not found]"
+
+        # 2. Find chapter
+        chapter_node = None
+        for n in L.d(book_node, otype='chapter'):
+            # BJ chapter feature is int
+            if F.chapter.v(n) == int(chapter_num):
+                chapter_node = n
+                break
+                
+        if not chapter_node:
+            return f"[BJ: Chapter {chapter_num} not found]"
+            
+        # 3. Find verse
+        verse_node = None
+        for n in L.d(chapter_node, otype='verse'):
+             if F.verse.v(n) == int(verse_num):
+                 verse_node = n
+                 break
+                 
+        if not verse_node:
+            return ""
+
+        # 4. Get Text
+        # Iterate words and join 'text' feature (which is surface form)
+        words = L.d(verse_node, otype='word')
+        # BJ text feature handles spacing?
+        # My script: `safe_text = w['text']...`
+        # `f.write(f"{safe_text}\n")`
+        # Using `T.text` might automatically add spaces if configured.
+        # My `otext.config` had `@fmt:text-orig-full={text}`.
+        # Standard TF behavior for unconfigured formats is separated by space?
+        # Let's manual join to be safe, or use `features='text'`
+        return " ".join([F.text.v(w) for w in words])
 
     def get_french_text(self, book_en, chapter_num, verse_num):
         if not self.tob_api:
@@ -146,7 +233,7 @@ class VersePrinter:
             
         return target_str
 
-    def print_verse(self, node=None, book_en=None, chapter=None, verse=None, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=None, show_hebrew=False):
+    def print_verse(self, node=None, book_en=None, chapter=None, verse=None, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=None, show_hebrew=False, french_version='tob'):
         if not source_app:
             source_app = self.app
             
@@ -254,12 +341,27 @@ class VersePrinter:
             print(f"{' '.join(english_text)}")
         
         # French translation (TOB)
+        # French translation (TOB or BJ)
         if show_french:
-            french_text = self.get_french_text(book_en, chapter, verse)
-            if french_text and not french_text.startswith("[TOB:"):
-                print(f"{french_text}")
-            elif french_text and node:
-                 print(f"{french_text}")
+            french_text = ""
+            if french_version == 'bj':
+                french_text = self.get_bj_text(book_en, chapter, verse)
+            else:
+                # Default to TOB
+                french_text = self.get_french_text(book_en, chapter, verse)
+
+            if french_text:
+                 # Check for None/Empty or Error strings
+                 if not french_text.startswith(f"[{french_version.upper()}:") or french_text.startswith(f"[{french_version.upper()}: Book"):
+                     # We print errors if they are about missing books?
+                     # Existing logic: `if french_text and not french_text.startswith("[TOB:")`
+                     # But sometimes we might want to see it?
+                     # Let's hide errors if typical mismatch.
+                     if not french_text.startswith("["):
+                         print(f"{french_text}")
+                     elif node: # If driving node exists, output even if error?
+                         # Only if it is NOT a "not found" error which is common for cross-versions
+                         pass
 
         # Cross-references
         if show_crossref:
@@ -359,6 +461,11 @@ class VersePrinter:
                                     # normalizer has code_to_n1904.
                                     b_en = self.normalizer.code_to_n1904.get(b_code)
                                     if b_en:
-                                        txt = self.get_french_text(b_en, ch, vs)
-                                        if txt and not txt.startswith("[TOB:"):
+                                        txt = ""
+                                        if french_version == 'bj':
+                                            txt = self.get_bj_text(b_en, ch, vs)
+                                        else:
+                                            txt = self.get_french_text(b_en, ch, vs)
+                                            
+                                        if txt and not txt.startswith("["):
                                             print(f"            {txt}")

@@ -139,3 +139,31 @@ To make your translation available in `biblecli`:
 
 > [!TIP]
 > If you don't need word-level analysis, consider making the "slot" (the smallest unit) a full **verse**. This simplifies the script significantly as you don't need to split text and manage trailing spaces.
+
+# Specific Guides for Supported French Translations
+
+While the above guide is generic, here are specific instructions for the translations explicitly supported by `biblecli`'s logic.
+
+## 1. Traduction Œcumenique de la Bible (TOB)
+
+Due to copyright, you must provide your own copy.
+
+1.  **Acquire**: A personal digital copy (PDF, EPUB, etc.).
+2.  **Convert**: You need to extract the text and convert it to TF. You can use the generic strategy above or write a custom parser (Google Antigravity would help).
+3.  **Install**:
+    *   Target Directory: `~/text-fabric-data/TOB/1.0/`
+    *   Required Features: `text` (verse content), `book` (book name), `chapter` (number), `verse` (number).
+
+## 2. Bible de Jérusalem (BJ)
+
+We provide a helper script for the EPUB version of the Bible de Jérusalem (e.g. valid for the standard ebook edition).
+
+1.  **Acquire**: The EPUB version of the Bible de Jérusalem.
+2.  **Convert**:
+    *   Unzip your EPUB file.
+    *   Run the provided script `src/convert_bj_epub.py` (ensure you adjust the input path in the script to match your unzipped EPUB folder).
+    *   `python3 src/convert_bj_epub.py`
+3.  **Install**:
+    *   The script generates files in `output/brand_new_bj/1.0`.
+    *   Move these files to `~/text-fabric-data/BJ/1.0/`.
+

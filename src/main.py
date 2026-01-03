@@ -16,6 +16,7 @@ from cli_help import CLIHelp
 # Determine project root relative to this script (src/main.py -> ..)
 BIBLECLI_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOB_DIR = os.path.expanduser("~/text-fabric-data/TOB/1.0/")
+BJ_DIR = os.path.expanduser("~/text-fabric-data/BJ/1.0/")
 
 # Initialize Managers
 DATA_DIR = os.path.join(BIBLECLI_DIR, "data")
@@ -33,12 +34,41 @@ def get_tob_app():
     
     _tob_loaded = True
     try:
-        with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
-            TF_TOB = Fabric(locations=[TOB_DIR], silent=True)
-            _tob_api_instance = TF_TOB.load('text book chapter verse', silent=True)
+        if os.path.exists(TOB_DIR):
+            with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
+                TF_TOB = Fabric(locations=[TOB_DIR], silent=True)
+                _tob_api_instance = TF_TOB.load('text book chapter verse', silent=True)
+        else:
+            _tob_api_instance = None
     except Exception as e:
         _tob_api_instance = None
     return _tob_api_instance
+
+# BJ Lazy Load
+_bj_api_instance = None
+_bj_loaded = False
+
+def get_bj_app():
+    global _bj_api_instance, _bj_loaded
+    if _bj_loaded:
+         return _bj_api_instance
+    
+    _bj_loaded = True
+    try:
+        if os.path.exists(BJ_DIR):
+            # Check if cache exists to decide if we warn about speed? 
+            # Or just always say "Loading..."
+            # Since this is lazy loaded, a message is helpful.
+            
+            with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
+                 TF_BJ = Fabric(locations=[BJ_DIR], silent=True)
+                 _bj_api_instance = TF_BJ.load('text book chapter verse', silent=True)
+        else:
+             _bj_api_instance = None
+    except Exception as e:
+        # print(f"Error loading BJ: {e}", file=sys.stderr)
+        _bj_api_instance = None
+    return _bj_api_instance
 
 # Global Printer (initialized in main or dynamically)
 printer = None
@@ -281,12 +311,36 @@ def main():
     # Standard parser for other commands
     parser.add_argument("command_or_ref", nargs="?", help="Command or Bible reference")
     parser.add_argument("args", nargs="*", help="Arguments for the command")
-    parser.add_argument("-t", "--tr", nargs="+", choices=["en", "fr", "gr", "hb"], help="Translations")
+    # Remove choices from argparse to prevent error on greedy consumption of positional args
+    parser.add_argument("-t", "--tr", nargs="+", help="Translations (en, fr, gr, hb)")
     parser.add_argument("-c", "--crossref", action="store_true", help="Display cross-references")
     parser.add_argument("-f", "--crossref-full", action="store_true", help="Display cross-references with text")
     parser.add_argument("-s", "--source", help="Filter cross-references by source")
     
     args = parser.parse_args()
+
+    args = parser.parse_args()
+
+    # Manual handling for greedy --tr argument
+    if args.tr:
+        valid_langs = ["en", "fr", "gr", "hb"]
+        real_tr = []
+        overflow_args = []
+        
+        for item in args.tr:
+            if item in valid_langs:
+                real_tr.append(item)
+            else:
+                overflow_args.append(item)
+        
+        args.tr = real_tr
+        
+        if overflow_args:
+             if not args.command_or_ref:
+                  args.command_or_ref = overflow_args[0]
+                  args.args = overflow_args[1:] + args.args
+             else:
+                  args.args = overflow_args + args.args
 
     if args.help or not args.command_or_ref:
         CLIHelp().print_usage()
@@ -316,7 +370,8 @@ def main():
     
     # Initialize global printer
     global printer
-    printer = VersePrinter(get_tob_app, get_n1904_app, normalizer, ref_db, get_bhsa_app)
+    global printer
+    printer = VersePrinter(get_tob_app, get_n1904_app, normalizer, ref_db, get_bhsa_app, get_bj_app)
     
     # Initialize Handler with Lazy Provider
     handler = ReferenceHandler(get_n1904_app, get_lxx_app, get_bhsa_app, normalizer, printer)
@@ -348,7 +403,12 @@ def main():
         ref_db.load_all(source_filter=args.source)
         cross_refs = ref_db.in_memory_refs
 
-    handler.handle_reference(first_arg, show_english, show_greek, show_french, show_crossref, cross_refs, args.crossref_full, show_hebrew)
+    # Determine French Version
+    french_version = 'tob'
+    if args.source and args.source.lower() == 'bj':
+        french_version = 'bj'
+
+    handler.handle_reference(first_arg, show_english, show_greek, show_french, show_crossref, cross_refs, args.crossref_full, show_hebrew, french_version=french_version)
 
 if __name__ == "__main__":
     main()

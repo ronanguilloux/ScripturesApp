@@ -70,8 +70,8 @@ The tool uses the Text-Fabric library to manage Bible datasets.
 Due to copyright restrictions, the **Traduction Œcumenique de la Bible (TOB)** text is **not included** and cannot be automatically downloaded.
 
 To add and display the TOB French text, you must:
-1.  **Acquire a personal copy** of the TOB (e.g., from a personal PDF or e-book).
-2.  **Convert it** to a Text-Fabric compatible format. Extract text using Python libraries like `PyPDF` or `BeautifulSoup`. Use a tool like the native [**TF Converter**](ADD_SOURCES.md) to parse your source text and generate the TF files.
+1.  **Acquire an EPUB version** of the TOB [here](https://e-librairie.leclerc/product/9782853002011_9782853002011_2/la-traduction-oecumenique-de-la-bible-tob-a-notes-essentielles)
+2.  **Convert it** to a Text-Fabric compatible format. Unzip the EPUB and use a tool like the native [**TF Converter**](ADD_SOURCES.md) to parse your source text and generate the TF files.
 3.  **Install it locally**:
     -   Create a directory: `mkdir -p ~/text-fabric-data/TOB/1.0`
     -   Place your generated TF files (e.g., `otype.tf`, `book.tf`, `chapter.tf`, `verse.tf`, `text.tf`, etc.) into this directory.
@@ -87,7 +87,24 @@ The expected structure is:
     └── ...
 ```
 
-Same exact logic if you were to use a copy of the *Bible de Jérusalem* (EBAF/CERF, ISBN 978-2204115919) or any another Bible in another language.
+### 3. French BJ Data (Manual Setup, personal copy required)
+Similar to the TOB, the **Bible de Jérusalem (BJ)** is not included.
+
+To add the BJ text:
+1.  **Acquire the EPUB** version of the Bible de Jérusalem [here](https://www.fnac.com/livre-numerique/a7929034/CTAD-LA-BIBLE-DE-JERUSALEM).
+2.  **Convert it** using the provided script:
+    *   Unzip your EPUB file.
+    *   Run `src/convert_bj_epub.py` (you may need to adjust paths in the script).
+3.  **Install it locally**:
+    *   `mkdir -p ~/text-fabric-data/BJ/1.0`
+    *   Copy the generated TF files to this directory.
+
+Structure:
+```
+~/text-fabric-data/BJ/1.0/
+    ├── otype.tf
+    ├── ...
+```
 
 ## Usage
 
@@ -136,8 +153,9 @@ biblecli list books
 ### Translations
 
 
-Use the `-t` or `--tr` option to specify translations. Supported: `en` (Berean Interlinear Bible English translation), `fr` (French TOB), `gr` (Greek N1904).
-When no translation is specified, the default is `fr` (French TOB). 
+Use the `-t` or `--tr` option to specify translations. Supported: `en` (Berean Interlinear Bible English translation), `fr` (French TOB by default, or BJ), `gr` (Greek N1904).
+When no translation is specified, the default depends on the book (usually Greek/Hebrew + French TOB).
+When `-t fr` is used without a source, **TOB** is the default French text. Use `-s bj` to select Bible de Jérusalem. 
 
 Show only English:
 ```sh
@@ -242,6 +260,12 @@ For convenience, you can use the `tob` command to quickly access the TOB French 
 
 ```sh
 tob "Mc 1:1" # equivalent to `biblecli "Mk 1:1" -s tob` - displays French TOB
+```
+
+You can also use the `bj` command for the Bible de Jérusalem:
+
+```sh
+bj "Mc 1:1" # equivalent to `biblecli "Mk 1:1" -s bj` - displays French BJ
 ```
 
 ### Abbreviations

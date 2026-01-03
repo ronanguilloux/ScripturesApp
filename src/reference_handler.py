@@ -49,7 +49,7 @@ class ReferenceHandler:
 
         return None, None
 
-    def handle_reference(self, ref_str, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, show_hebrew=False):
+    def handle_reference(self, ref_str, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, show_hebrew=False, french_version='tob'):
         # 1. Normalize first to decide strategies
         norm = self.normalizer.normalize_reference(ref_str)
         
@@ -165,12 +165,12 @@ class ReferenceHandler:
                             single_ref = f"{book_chapter}:{v_num}"
                             node, source_app = self._get_node_and_app(single_ref)
                             if node:
-                                self.printer.print_verse(node=node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=source_app, show_hebrew=show_hebrew)
+                                self.printer.print_verse(node=node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=source_app, show_hebrew=show_hebrew, french_version=french_version)
                             else:
                                 if ' ' in book_chapter:
                                     b, c = book_chapter.rsplit(' ', 1)
-                                    self.printer.print_verse(book_en=b, chapter=c, verse=v_num, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew)
-                                else:
+                                    self.printer.print_verse(book_en=b, chapter=c, verse=v_num, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew, french_version=french_version)
+                                else: # book only?
                                     print(f"Could not find verse: {single_ref}")
                         return
 
@@ -208,7 +208,7 @@ class ReferenceHandler:
                         if chapter_node and F.otype.v(chapter_node) == 'chapter':
                              verse_nodes = L.d(chapter_node, otype='verse')
                              for verse_node in verse_nodes:
-                                 self.printer.print_verse(node=verse_node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=app, show_hebrew=show_hebrew)
+                                 self.printer.print_verse(node=verse_node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=app, show_hebrew=show_hebrew, french_version=french_version)
                              return
 
                         # Fallback to TOB extraction loop
@@ -218,8 +218,8 @@ class ReferenceHandler:
                             txt = self.printer.get_french_text(book_name, chapter_num, v)
                             if (not txt or txt.startswith("[TOB:")) and v > 1:
                                 break
-                            if txt and not txt.startswith("[TOB:"):
-                                self.printer.print_verse(book_en=book_name, chapter=chapter_num, verse=v, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew)
+                            if txt and not txt.startswith("["):
+                                self.printer.print_verse(book_en=book_name, chapter=chapter_num, verse=v, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew, french_version=french_version)
                                 found_any = True
                             v += 1
                         if found_any: return
@@ -234,7 +234,7 @@ class ReferenceHandler:
             node, source_app = self._get_node_and_app(ref_str)
             
             if node:
-                self.printer.print_verse(node=node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=source_app, show_hebrew=show_hebrew)
+                self.printer.print_verse(node=node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=source_app, show_hebrew=show_hebrew, french_version=french_version)
             else:
                  # Last ditch manual parse for TOB if node failed
                 if ":" in ref_str and " " in ref_str:
@@ -246,7 +246,7 @@ class ReferenceHandler:
                             try:
                                 ch = int(ch_v[0])
                                 vs = int(ch_v[1])
-                                self.printer.print_verse(book_en=book_name, chapter=ch, verse=vs, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew)
+                                self.printer.print_verse(book_en=book_name, chapter=ch, verse=vs, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew, french_version=french_version)
                                 return
                             except ValueError:
                                 pass
