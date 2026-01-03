@@ -65,9 +65,9 @@ def test_chapter_ref_calls_printer_loop(handler, mock_app, mock_printer):
     assert mock_printer.print_verse.call_count == 3
     # Check calls
     expected_calls = [
-        call(node=1001, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False),
-        call(node=1002, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False),
-        call(node=1003, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False)
+        call(node=1001, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob'),
+        call(node=1002, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob'),
+        call(node=1003, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob')
     ]
     mock_printer.print_verse.assert_has_calls(expected_calls)
     mock_printer.print_verse.assert_has_calls(expected_calls)
