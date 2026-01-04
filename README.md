@@ -296,6 +296,20 @@ pytest
 
 We have implemented the smart OT/NT lazy loading and default behaviors.
 
+Indeed the datasets are loaded in the following order:
+- `N1904` (Greek New Testament)
+- `LXX` (Greek Ancien Testament)
+- `BHSA` (Hebrew Ancien Testament)
+- `TOB` (Entire *TOB* Bible in French)
+- `BJ` (Entire *Bible de Jérusalem* in French)
+
+The lazy loading logic consists in loading the minimal number of datasets based on the reference:
+
+- Query `Mc 1:1` without flags -> Loads `N1904` and `TOB`. Skips `BHSA`.
+- Query `Mc 1:1 --tr fr` -> Loads `N1904` and `TOB`. Skips `BHSA`.
+- Query `Mc 1:1 --tr en` -> Loads `N1904` only. Skips `TOB` and `BHSA`.
+- Query `Mc 1:1 --tr en fr` -> Loads `N1904` and `TOB`. Skips `BHSA`.
+
 ### Key Achievements
 
 **Smart Defaults**: `tob "Gn 1:1"` now automatically displays Hebrew, Greek (LXX), and French. `tob "Mc 1:1"` displays Greek (N1904) and French, effectively skipping the Hebrew load.
@@ -317,21 +331,21 @@ Measured using reference: **Mc 1:1**
 
 | Command | Time | Notes |
 | :--- | :--- | :--- |
-| `tob "Mc 1:1"` (Default) | **~3.7s** | Baseline (Python startup + N1904 load) |
-| `tob "Mc 1:1" --tr fr` | **~3.7s** | Minimal overhead (Lazy loading) |
-| `tob "Mc 1:1" --tr gr` | **~3.7s** | Minimal overhead |
+| `tob "Mc 1:1"` (Default) | **~4.0s** | Baseline (Python startup + N1904 + TOB) |
+| `tob "Mc 1:1" --tr fr` | **~3.7s** | Minimal overhead (Skips BHSA) |
+| `tob "Mc 1:1" --tr gr` | **~3.7s** | Minimal overhead (Skips BHSA & TOB) |
 
 ### Old Testament (OT)
 Measured using reference: **Gn 1:1**
 
 | Command | Time | Notes |
 | :--- | :--- | :--- |
-| `tob "Gn 1:1"` (Default) | **~4.0s** | **+0.3s vs NT** (Lazy loads LXX dataset) |
-| `tob "Gn 1:1" --tr fr` | **~4.0s** | Same as Default |
-| `tob "Gn 1:1" --tr hb` | **~9.7s** | **+5.7s overhead** (Loads BHSA dataset) |
-| `tob "Gn 1:1" --tr en fr gr hb` | **~9.4s** | **+5.4s overhead** |
+| `tob "Gn 1:1"` (Default) | **~6.0s** | **+2.3s vs NT** (Loads LXX + BHSA + TOB) |
+| `tob "Gn 1:1" --tr fr` | **~5.8s** | Forces Hebrew display (Loads LXX + BHSA + TOB) |
+| `tob "Gn 1:1" --tr hb` | **~5.8s** | Loads LXX + BHSA |
+| `tob "Gn 1:1" --tr en fr gr hb` | **~10.9s** | Full load (System overhead) |
 
 **Key Findings:**
-- **Baseline**: ~3.7s startup time.
-- **Lazy Loading**: Accessing French or Greek (NT) adds negligible overhead. Accessing OT adds ~0.3s for LXX.
-- **Hebrew Cost**: Accessing Hebrew (`--tr hb`) consistently adds ~6s to load the `ETCBC/bhsa` dataset.
+- **Baseline**: ~3.7-4.0s startup time for NT.
+- **Lazy Loading**: Accessing OT adds ~2s (LXX + BHSA).
+- **Hebrew**: For OT queries, Hebrew is displayed by default, incurring the BHSA load cost (`~2s`). For NT queries, it is skipped, saving that time.
