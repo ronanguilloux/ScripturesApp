@@ -49,7 +49,7 @@ class ReferenceHandler:
 
         return None, None
 
-    def handle_reference(self, ref_str, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, show_hebrew=False, french_version='tob'):
+    def handle_reference(self, ref_str, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, show_hebrew=False, french_version='tob', compact_mode=0):
         # 1. Normalize first to decide strategies
         norm = self.normalizer.normalize_reference(ref_str)
         
@@ -161,15 +161,25 @@ class ReferenceHandler:
                             book = book_chapter
                             chapter = ""
                         
+                        # Print Header once if in compact mode
+                        if compact_mode > 0:
+                            # Use TOB name if possible
+                            if ' ' in book_chapter:
+                                b_name = book_chapter.rsplit(' ', 1)[0]
+                                f_name = self.normalizer.n1904_to_tob.get(b_name, b_name)
+                                print(f"\n{f_name} {book_chapter.split()[-1]}:{start_v}-{end_v}")
+                            else:
+                                print(f"\n{book_chapter} {start_v}-{end_v}")
+
                         for v_num in range(start_v, end_v + 1):
                             single_ref = f"{book_chapter}:{v_num}"
                             node, source_app = self._get_node_and_app(single_ref)
                             if node:
-                                self.printer.print_verse(node=node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=source_app, show_hebrew=show_hebrew, french_version=french_version)
+                                self.printer.print_verse(node=node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=source_app, show_hebrew=show_hebrew, french_version=french_version, compact_mode=compact_mode)
                             else:
                                 if ' ' in book_chapter:
                                     b, c = book_chapter.rsplit(' ', 1)
-                                    self.printer.print_verse(book_en=b, chapter=c, verse=v_num, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew, french_version=french_version)
+                                    self.printer.print_verse(book_en=b, chapter=c, verse=v_num, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew, french_version=french_version, compact_mode=compact_mode)
                                 else: # book only?
                                     print(f"Could not find verse: {single_ref}")
                         return
@@ -207,8 +217,16 @@ class ReferenceHandler:
                         chapter_node = app.nodeFromSectionStr(f"{book_name} {chapter_num}")
                         if chapter_node and F.otype.v(chapter_node) == 'chapter':
                              verse_nodes = L.d(chapter_node, otype='verse')
+                             # Print Header for Chapter block
+                             if compact_mode > 0:
+                                 # Header already printed above at line 187?
+                                 # Yes: print(f"\n{book_fr} {chapter_num}") is unconditional above.
+                                 # Wait, if compact_mode, print_verse suppresses its own header.
+                                 # So the header at 187 covers the whole block. Perfect.
+                                 pass
+                                 
                              for verse_node in verse_nodes:
-                                 self.printer.print_verse(node=verse_node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=app, show_hebrew=show_hebrew, french_version=french_version)
+                                 self.printer.print_verse(node=verse_node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=app, show_hebrew=show_hebrew, french_version=french_version, compact_mode=compact_mode)
                              return
 
                         # Fallback to TOB extraction loop
@@ -219,7 +237,7 @@ class ReferenceHandler:
                             if (not txt or txt.startswith("[TOB:")) and v > 1:
                                 break
                             if txt and not txt.startswith("["):
-                                self.printer.print_verse(book_en=book_name, chapter=chapter_num, verse=v, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew, french_version=french_version)
+                                self.printer.print_verse(book_en=book_name, chapter=chapter_num, verse=v, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew, french_version=french_version, compact_mode=compact_mode)
                                 found_any = True
                             v += 1
                         if found_any: return
@@ -234,7 +252,24 @@ class ReferenceHandler:
             node, source_app = self._get_node_and_app(ref_str)
             
             if node:
-                self.printer.print_verse(node=node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=source_app, show_hebrew=show_hebrew, french_version=french_version)
+                # For single verse, compact mode basically just suppresses header and adds prefix?
+                # User asked for it "when it is a suite of verses... OR Mc 1 tout seul".
+                # "Mc 1:1" is also a single verse.
+                # If compact mode is on, we print Header once.
+                if compact_mode > 0:
+                     # Calculate header
+                     # Assuming ref_str is clean
+                     # We can reconstruct or use parts
+                     print(f"\n{ref_str}") # Simplify for now or look up French name?
+                     # Ideally use printer logic to get header name, but that's inside print_verse.
+                     # But print_verse hides it. 
+                     # Let's let print_verse handle SINGLE verse cases?
+                     # NO, print_verse suppresses header in compact mode!
+                     # So we MUST print header here for single verse too.
+                     # Let's use simplified header or existing one.
+                     pass
+                     
+                self.printer.print_verse(node=node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=source_app, show_hebrew=show_hebrew, french_version=french_version, compact_mode=compact_mode)
             else:
                  # Last ditch manual parse for TOB if node failed
                 if ":" in ref_str and " " in ref_str:
@@ -246,7 +281,7 @@ class ReferenceHandler:
                             try:
                                 ch = int(ch_v[0])
                                 vs = int(ch_v[1])
-                                self.printer.print_verse(book_en=book_name, chapter=ch, verse=vs, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew, french_version=french_version)
+                                self.printer.print_verse(book_en=book_name, chapter=ch, verse=vs, show_english=show_english, show_greek=show_greek, show_french=show_french, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, show_hebrew=show_hebrew, french_version=french_version, compact_mode=compact_mode)
                                 return
                             except ValueError:
                                 pass

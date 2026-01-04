@@ -317,6 +317,8 @@ def main():
     parser.add_argument("-c", "--crossref", action="store_true", help="Display cross-references")
     parser.add_argument("-f", "--crossref-full", action="store_true", help="Display cross-references with text")
     parser.add_argument("-s", "--crossref-source", help="Filter cross-references by source")
+    parser.add_argument("-k", "--compact", action="store_true", help="Compact display (vX. Text)")
+    parser.add_argument("-K", "--very-compact", action="store_true", help="Very compact display (Text only)")
     
     args = parser.parse_args()
 
@@ -433,7 +435,14 @@ def main():
          # So we should strictly ignore -s for french_version.
          pass
 
-    handler.handle_reference(first_arg, show_english, show_greek, show_french, show_crossref, cross_refs, args.crossref_full, show_hebrew, french_version=french_version)
+    # Determine Compact Mode
+    compact_mode = 0
+    if args.very_compact:
+        compact_mode = 2
+    elif args.compact:
+        compact_mode = 1
+
+    handler.handle_reference(first_arg, show_english, show_greek, show_french, show_crossref, cross_refs, args.crossref_full, show_hebrew, french_version=french_version, compact_mode=compact_mode)
 
 if __name__ == "__main__":
     main()

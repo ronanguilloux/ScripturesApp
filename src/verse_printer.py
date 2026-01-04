@@ -233,7 +233,7 @@ class VersePrinter:
             
         return target_str
 
-    def print_verse(self, node=None, book_en=None, chapter=None, verse=None, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=None, show_hebrew=False, french_version='tob'):
+    def print_verse(self, node=None, book_en=None, chapter=None, verse=None, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=None, show_hebrew=False, french_version='tob', compact_mode=0):
         if not source_app:
             source_app = self.app
             
@@ -295,9 +295,44 @@ class VersePrinter:
              else:
                  header_book_name = book_en
 
-        # Header
-        print(f"\n{header_book_name} {chapter}:{verse}")
+        # Header logic
+        # If compact_mode > 0, we suppress the per-verse header
+        if compact_mode == 0:
+            print(f"\n{header_book_name} {chapter}:{verse}")
+            
+        # Prefix logic
+        prefix = ""
+        if compact_mode == 1:
+            prefix = f"v{verse}. "
+        elif compact_mode == 2:
+            prefix = "" # No prefix for very compact
+            
+        # For compact mode, we might want to collect all text and print in one go?
+        # But print_verse is called per verse. 
+        # Standard compact behavior: print(f"{prefix}{text}")
         
+        # NOTE: Multiple requests (show_greek and show_french) in compact mode?
+        # User said: "vers s'affichent chacun sur une ligne".
+        # If showing multiple languages, putting them on ONE line might be messy.
+        # But usually compact is used for single translation reading.
+        # Let's print each requested text on its own line (or same line?).
+        # If multiple languages, `print_verse` prints multiple lines naturally.
+        # With compact mode, we retain the line breaks between LANGUAGES, but avoid the main Header.
+        # And we prefix the FIRST language line? Or all? 
+        # Usually prefix the first line is best.
+        
+        has_printed_prefix = False
+        def get_prefix():
+            nonlocal has_printed_prefix
+            if not has_printed_prefix:
+                has_printed_prefix = True
+                return prefix
+            # For subsequent lines of the SAME verse (e.g. diff languages), indent or repeat?
+            # Repeating is ugly. Indenting is better. Or empty.
+            if compact_mode > 0:
+                 return " " * len(prefix) # Indent alignment?
+            return ""
+
         # Hebrew Text
         if show_hebrew:
             # If current node IS Hebrew, print it
@@ -305,6 +340,7 @@ class VersePrinter:
             # Or simpler: always try to fetch Hebrew from BHSA provider if show_hebrew is True
             # regardless of whether the driving node is N1904, LXX or BHSA.
             # BUT if the driving node IS BHSA, we already have the node!
+            hebrew_text = None
             if self.bhsa_provider:
                  bhsa_app = self.bhsa_provider()
                  if bhsa_app and source_app.api == bhsa_app.api:
@@ -314,12 +350,12 @@ class VersePrinter:
                          # BHSA features: g_word_utf8
                          if hasattr(F, 'g_word_utf8'):
                              hebrew_text = " ".join([F.g_word_utf8.v(w) for w in words])
-                             print(f"{hebrew_text}")
                  else:
                      # Fetch via alignment (Book/Chapter/Verse)
                      hebrew_text = self.get_hebrew_text(book_en, chapter, verse)
-                     if hebrew_text:
-                         print(f"{hebrew_text}")
+            
+            if hebrew_text:
+                print(f"{get_prefix()}{hebrew_text}")
 
         # Greek text
         if show_greek and node:
@@ -327,7 +363,7 @@ class VersePrinter:
             # N1904 and LXX use T.text logic or standard TF text
             greek_text = T.text(node)
             if greek_text and greek_text.strip():
-                print(f"{greek_text}")
+                print(f"{get_prefix()}{greek_text}")
         
         # English translation (Only for N1904 source currently)
         if show_english and node and source_app == self.app:
@@ -338,9 +374,8 @@ class VersePrinter:
                 if not trans and hasattr(F, 'gloss'):
                     trans = F.gloss.v(w)
                 english_text.append(trans)
-            print(f"{' '.join(english_text)}")
+            print(f"{get_prefix()}{' '.join(english_text)}")
         
-        # French translation (TOB)
         # French translation (TOB or BJ)
         if show_french:
             french_text = ""
@@ -358,12 +393,12 @@ class VersePrinter:
                      # But sometimes we might want to see it?
                      # Let's hide errors if typical mismatch.
                      if not french_text.startswith("["):
-                         print(f"{french_text}")
+                         print(f"{get_prefix()}{french_text}")
                      elif node: # If driving node exists, output even if error?
                          # Only if it is NOT a "not found" error which is common for cross-versions
                          pass
-
-        # Cross-references
+ 
+        # Cross-references (Header logic might differ? No, cross-refs usually separate block)
         if show_crossref:
             # We need the 3-letter code for the current book to look up refs
             # normalizer has n1904_to_code
@@ -390,14 +425,18 @@ class VersePrinter:
                 if ref_key in self.ref_db.in_memory_refs:
                     data = self.ref_db.in_memory_refs[ref_key]
                     
-                    print("\n––––––––––")
+                    if compact_mode == 0:
+                        print("\n––––––––––")
                     
                     # 1. Notes
                     if data.get("notes"):
-                        print("    Notes:")
+                        if compact_mode == 0: print("    Notes:")
                         for n in data["notes"]:
-                            print(f"        {n}")
-                        print("")
+                            if compact_mode > 0:
+                                print(f"    [Note]: {n}")
+                            else:
+                                print(f"        {n}")
+                        if compact_mode == 0: print("")
                     
                     # 2. Relations grouped by type
                     relations = data.get("relations", [])
@@ -408,7 +447,7 @@ class VersePrinter:
                          by_type[t].append(r)
                     
                     for t, rels in by_type.items():
-                        print(f"    {t}: ")
+                        if compact_mode == 0: print(f"    {t}: ")
                         for r in rels:
                             target = r["target"]
                             fmt_target = self.format_ref_fr(target)
@@ -416,7 +455,11 @@ class VersePrinter:
                             # If detailed crossref requested (text), we would fetch it here
                             # But current specs say "crossref-full" was partial in original
                             # Let's simple print
-                            line = f"        {fmt_target}"
+                            if compact_mode == 0:
+                                line = f"        {fmt_target}"
+                            else:
+                                line = f"    [{t}]: {fmt_target}"
+                                
                             if show_crossref_text: 
                                 if note: line += f" ({note})"
                             else:

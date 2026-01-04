@@ -91,6 +91,12 @@ OPTIONS
               Filter cross-references by source id (e.g. 'tob' for TOB notes, 'all' for all valid sources).
               If omitted, and -b is provided, the bible version is used as the default source.
 
+       -k, --compact
+              Compact display: each verse on a new line prefixed with 'vX.', no blank lines.
+       
+       -K, --very-compact
+              Very compact display: each verse on a new line with no prefix (text only), no blank lines.
+
 DATA SOURCES
        N1904 (Greek NT)
               Nestle 1904 Greek New Testament. Structure based on Tischendorf.
