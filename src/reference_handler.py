@@ -12,7 +12,7 @@ class ReferenceHandler:
         if not norm:
             return None, None
             
-        code, _, _, _ = norm
+        code, ch, vs, _ = norm
         
         # Smart Loading Logic
         if self.normalizer.is_nt(code):
@@ -20,9 +20,14 @@ class ReferenceHandler:
              if self.n1904_provider:
                  n1904_app = self.n1904_provider()
                  if n1904_app:
-                     node = n1904_app.nodeFromSectionStr(ref_str)
-                     if node and isinstance(node, int):
-                         return node, n1904_app
+                     # Use tuple lookup for robustness
+                     book_name = self.normalizer.code_to_n1904.get(code)
+                     if book_name:
+                         # Verify if nodeFromSection can accept the tuple
+                         # TF API: T.nodeFromSection((book, chapter, verse))
+                         node = n1904_app.api.T.nodeFromSection((book_name, ch, vs))
+                         if node:
+                             return node, n1904_app
                          
         elif self.normalizer.is_ot(code):
              # Try LXX (Old Testament)
