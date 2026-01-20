@@ -1,0 +1,16 @@
+{
+    "version": "1.0",
+    "description": "References for doc_test (nt)",
+    "cross_references": [
+        {
+            "source": "JHN.1.1",
+            "relations": [
+                {
+                    "target": "GEN.1.1",
+                    "type": "parallel",
+                    "note": "Shortcuts test"
+                }
+            ]
+        }
+    ]
+}

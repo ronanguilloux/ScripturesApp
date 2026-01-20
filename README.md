@@ -1,34 +1,30 @@
 # Bible CLI Tool
 
-A command-line interface for reading Greek (N1904), Hebrew (BHSA), English, and French (TOB) verses.
+A command-line interface for reading verses in Greek (N1904 or LXX), Hebrew (BHSA), English (Berean Interlinear Bible), French (TOB or BJ) and Arabic (Ketab al-Nabi).
 
 # In a nutshell
 
-Display a verse from (as default)
+Example: Display a verse with
 - the Masoretic Hebrew (Biblia Hebraica Stuttgartensia),
 - plus the Greek *Septuaginta* (LXX),
 - plus the French TOB:
 
 ```sh
-biblecli "Gn 1:1-3" --tr gr hb fr
+biblecli "Gn 1:1-3" --tr gr hb fr -k
 ```
 
 Output:
 ```
-Genèse 1:1
-בְּ רֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַ שָּׁמַ֖יִם וְ אֵ֥ת הָ אָֽרֶץ
-ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν 
-Au commencement, Dieu créa le ciel et la terre.
-
-Genèse 1:2
-וְ הָ אָ֗רֶץ הָיְתָ֥ה תֹ֨הוּ֙ וָ בֹ֔הוּ וְ חֹ֖שֶׁךְ עַל פְּנֵ֣י תְהֹ֑ום וְ ר֣וּחַ אֱלֹהִ֔ים מְרַחֶ֖פֶת עַל פְּנֵ֥י הַ מָּֽיִם
-ἡ δὲ γῆ ἦν ἀόρατος καὶ ἀκατασκεύαστος καὶ σκότος ἐπάνω τῆς ἀβύσσου καὶ πνεῦμα θεοῦ ἐπεφέρετο ἐπάνω τοῦ ὕδατος 
-La terre était déserte et vide, et la ténèbre à la surface de l'abîme; le souffle de Dieu planait à la surface des eaux,
-
-Genèse 1:3
-וַ יֹּ֥אמֶר אֱלֹהִ֖ים יְהִ֣י אֹ֑ור וַֽ יְהִי אֹֽור
-καὶ εἶπεν ὁ θεός γενηθήτω φῶς καὶ ἐγένετο φῶς 
-et Dieu dit: «Que la lumière soit!» Et la lumière fut.
+Genèse 1:1-3
+v1. בְּ רֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַ שָּׁמַ֖יִם וְ אֵ֥ת הָ אָֽרֶץ
+    ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν 
+    Commencement de la création par Dieu du ciel et de la terre.
+v2. וְ הָ אָ֗רֶץ הָיְתָ֥ה תֹ֨הוּ֙ וָ בֹ֔הוּ וְ חֹ֖שֶׁךְ עַל פְּנֵ֣י תְהֹ֑ום וְ ר֣וּחַ אֱלֹהִ֔ים מְרַחֶ֖פֶת עַל פְּנֵ֥י הַ מָּֽיִם
+    ἡ δὲ γῆ ἦν ἀόρατος καὶ ἀκατασκεύαστος καὶ σκότος ἐπάνω τῆς ἀβύσσου καὶ πνεῦμα θεοῦ ἐπεφέρετο ἐπάνω τοῦ ὕδατος 
+    La terre était déserte et vide, et la ténèbre à la surface de l'abîme ; le souffle de Dieu planait à la surface des eaux,
+v3. וַ יֹּ֥אמֶר אֱלֹהִ֖ים יְהִ֣י אֹ֑ור וַֽ יְהִי אֹֽור
+    καὶ εἶπεν ὁ θεός γενηθήτω φῶς καὶ ἐγένετο φῶς 
+    et Dieu dit : « Que la lumière soit ! » Et la lumière fut.
 ```
 
 # Installation
@@ -36,15 +32,13 @@ et Dieu dit: «Que la lumière soit!» Et la lumière fut.
 ```sh
 git clone git@github.com:ronanguilloux/biblecli.git
 cd biblecli
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+make install
 bin/biblecli "Mk 1:1" # A simple query to test the installation
 ```
 
 ## Post-installation
 
-Add `biblecli` to your `$PATH` in your shell config file (e.g. `.zshrc`, `.bashrc`, `.bash_profile`):
+Add `biblecli`, `tob` and `bj` to your `$PATH` in your shell config file (e.g. `.zshrc`, `.bashrc`, `.bash_profile`):
 ```sh
 export PATH=$PATH:[YOUR-PATH-TO]/biblecli/bin
 ```
@@ -52,9 +46,13 @@ export PATH=$PATH:[YOUR-PATH-TO]/biblecli/bin
 ## Data Setup
 
 ### 1. General Bible Data (N1904, LXX, BHSA)
+
 The tool uses the Text-Fabric library to manage Bible datasets.
-- **Automatic Download**: When you run the tool for the first time with an internet connection, it will automatically download the required datasets ([CenterBLC/N1904](https://github.com/CenterBLC/N1904), [CenterBLC/LXX](https://github.com/CenterBLC/LXX), [ETCBC/bhsa](https://github.com/ETCBC/bhsa)) to your home directory under `~/text-fabric-data`.
-- **Location**: You can find these datasets in `~/text-fabric-data/github/...`. The expected structure is:
+
+**Automatic Download**
+
+When you run the tool for the first time with an internet connection, it will automatically download the required datasets ([CenterBLC/N1904](https://github.com/CenterBLC/N1904), [CenterBLC/LXX](https://github.com/CenterBLC/LXX), [ETCBC/bhsa](https://github.com/ETCBC/bhsa)) to your home directory under `~/text-fabric-data`. You can find these datasets in `~/text-fabric-data/github/...`. The expected structure is:
+
 
 ```
 ~/text-fabric-data/
@@ -69,23 +67,9 @@ The tool uses the Text-Fabric library to manage Bible datasets.
 ### 2. French TOB Data (Manual Setup, personal copy required)
 Due to copyright restrictions, the **Traduction Œcumenique de la Bible (TOB)** text is **not included** and cannot be automatically downloaded.
 
-To add and display the TOB French text, you must:
-1.  **Acquire an EPUB version** of the TOB [here](https://e-librairie.leclerc/product/9782853002011_9782853002011_2/la-traduction-oecumenique-de-la-bible-tob-a-notes-essentielles)
-2.  **Convert it** to a Text-Fabric compatible format. Unzip the EPUB and use a tool like the native [**TF Converter**](ADD_SOURCES.md) to parse your source text and generate the TF files.
-3.  **Install it locally**:
-    -   Create a directory: `mkdir -p ~/text-fabric-data/TOB/1.0`
-    -   Place your generated TF files (e.g., `otype.tf`, `book.tf`, `chapter.tf`, `verse.tf`, `text.tf`, etc.) into this directory.
-
-The expected structure is:
-```
-~/text-fabric-data/TOB/1.0/
-    ├── otype.tf
-    ├── book.tf
-    ├── chapter.tf
-    ├── verse.tf
-    ├── text.tf
-    └── ...
-```
+To add and display the TOB French text, you must
+1. **Acquire an EPUB version** of the TOB [here](https://e-librairie.leclerc/product/9782853002011_9782853002011_2/la-traduction-oecumenique-de-la-bible-tob-a-notes-essentielles)
+2. **Follow the instructions** in [ADD_SOURCES.md](ADD_SOURCES.md) and use the `converters/convert_tob_epub.py` script.
 
 ### 3. French BJ Data (Manual Setup, personal copy required)
 Similar to the TOB, the **Bible de Jérusalem (BJ)** is not included.
@@ -94,7 +78,7 @@ To add the BJ text:
 1.  **Acquire the EPUB** version of the Bible de Jérusalem [here](https://www.fnac.com/livre-numerique/a7929034/CTAD-LA-BIBLE-DE-JERUSALEM).
 2.  **Convert it** using the provided script:
     *   Unzip your EPUB file.
-    *   Run `src/convert_bj_epub.py` (you may need to adjust paths in the script).
+    *   Run `converters/convert_bj_epub.py` (you may need to adjust paths in the script).
 3.  **Install it locally**:
     *   `mkdir -p ~/text-fabric-data/BJ/1.0`
     *   Copy the generated TF files to this directory.
@@ -153,13 +137,18 @@ biblecli list books
 ### Translations
 
 
-Use the `-t` or `--tr` option to specify translations. Supported: `en` (Berean Interlinear Bible English translation), `fr` (French TOB by default, or BJ), `gr` (Greek N1904).
+Use the `-t` or `--tr` option to specify translations. Supported: `en` (Berean Interlinear Bible English translation), `fr` (French TOB by default, or BJ), `gr` (Greek N1904), `ar` (Arabic NAV).
 When no translation is specified, the default depends on the book (usually Greek/Hebrew + French TOB).
-Use `-b` to select the French translation source (e.g. `-b bj` for Bible de Jérusalem). Default is TOB. 
+Use `-b` to select the text version (e.g. `-b bj` for Bible de Jérusalem). Default is TOB. 
 
 Show only English:
 ```sh
 biblecli "Jn 3:16" -t en
+```
+
+Show Arabic (NAV):
+```sh
+biblecli "Gen 1:1" --tr ar
 ```
 
 Show both English, French and ancient Greek:

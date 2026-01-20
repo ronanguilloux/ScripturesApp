@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # Define the virtual environment directory
-BIBLE_DIR="/Users/ronan/Documents/Gemini/antigravity/biblecli"
+# Resolve the directory where the script is located (bin/)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve the project root (parent of bin/)
+BIBLE_DIR="$(dirname "$SCRIPT_DIR")"
 VENV_DIR="$BIBLE_DIR/.venv"
 
 # Check if the virtual environment exists

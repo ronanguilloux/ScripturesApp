@@ -1,5 +1,10 @@
 import sys
 import argparse
+import warnings
+
+# Suppress urllib3 OpenSSL warning on macOS/LibreSSL
+warnings.filterwarnings("ignore", message=".*urllib3 v2 only supports OpenSSL 1.1.1+.*")
+
 from tf.app import use
 from tf.fabric import Fabric
 import os
@@ -17,6 +22,7 @@ from cli_help import CLIHelp
 BIBLECLI_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOB_DIR = os.path.expanduser("~/text-fabric-data/TOB/1.0/")
 BJ_DIR = os.path.expanduser("~/text-fabric-data/BJ/1.0/")
+NAV_DIR = os.path.expanduser("~/text-fabric-data/NAV/1.0/")
 
 # Initialize Managers
 DATA_DIR = os.path.join(BIBLECLI_DIR, "data")
@@ -287,6 +293,27 @@ def get_bhsa_app():
          
     return _bhsa_app_instance
 
+# Lazy Load NAV
+_nav_api_instance = None
+_nav_loaded = False
+
+def get_nav_app():
+    global _nav_api_instance, _nav_loaded
+    if _nav_loaded:
+         return _nav_api_instance
+    
+    _nav_loaded = True
+    try:
+        if os.path.exists(NAV_DIR):
+            with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
+                 TF_NAV = Fabric(locations=[NAV_DIR], silent=True)
+                 _nav_api_instance = TF_NAV.load('text title number', silent=True)
+        else:
+             _nav_api_instance = None
+    except Exception as e:
+        _nav_api_instance = None
+    return _nav_api_instance
+
 def main():
     parser = argparse.ArgumentParser(description="N1904 CLI Tool", add_help=False)
     parser.add_argument("-h", "--help", action="store_true", help="Show this help message and exit")
@@ -304,7 +331,7 @@ def main():
         add_parser.add_argument("--type", default="other", help="Relation type (parallel, allusion, quotation, other)")
         add_parser.add_argument("-n", "--note", default="", help="Note for the relation")
         
-        args = add_parser.parse_args(sys.argv[1:])
+        args, _ = add_parser.parse_known_args(sys.argv[1:])
         handle_add(args)
         return
 
@@ -312,8 +339,8 @@ def main():
     parser.add_argument("command_or_ref", nargs="?", help="Command or Bible reference")
     parser.add_argument("args", nargs="*", help="Arguments for the command")
     # Remove choices from argparse to prevent error on greedy consumption of positional args
-    parser.add_argument("-t", "--tr", nargs="+", help="Translations (en, fr, gr, hb)")
-    parser.add_argument("-b", "--bible", help="Select French Text Version (tob, bj)")
+    parser.add_argument("-t", "--tr", nargs="+", help="Translations (en, fr, gr, hb, ar)")
+    parser.add_argument("-b", "--bible", help="Select Text Version (tob, bj)")
     parser.add_argument("-c", "--crossref", action="store_true", help="Display cross-references")
     parser.add_argument("-f", "--crossref-full", action="store_true", help="Display cross-references with text")
     parser.add_argument("-s", "--crossref-source", help="Filter cross-references by source")
@@ -326,7 +353,7 @@ def main():
 
     # Manual handling for greedy --tr argument
     if args.tr:
-        valid_langs = ["en", "fr", "gr", "hb"]
+        valid_langs = ["en", "fr", "gr", "hb", "ar"]
         real_tr = []
         overflow_args = []
         
@@ -370,11 +397,12 @@ def main():
     show_greek = True
     show_hebrew = True # Default enabled (controlled by handler)
     show_french = True
+    show_arabic = False
     
     # Initialize global printer
     global printer
     global printer
-    printer = VersePrinter(get_tob_app, get_n1904_app, normalizer, ref_db, get_bhsa_app, get_bj_app)
+    printer = VersePrinter(get_tob_app, get_n1904_app, normalizer, ref_db, get_bhsa_app, get_bj_app, get_nav_app)
     
     # Initialize Handler with Lazy Provider
     handler = ReferenceHandler(get_n1904_app, get_lxx_app, get_bhsa_app, normalizer, printer)
@@ -390,6 +418,7 @@ def main():
         if "fr" in args.tr: show_french = True
         if "gr" in args.tr: show_greek = True
         if "hb" in args.tr: show_hebrew = True
+        if "ar" in args.tr: show_arabic = True
         
     cross_refs = None
     show_crossref = args.crossref or args.crossref_full
@@ -441,8 +470,19 @@ def main():
         compact_mode = 2
     elif args.compact:
         compact_mode = 1
-
-    handler.handle_reference(first_arg, show_english, show_greek, show_french, show_crossref, cross_refs, args.crossref_full, show_hebrew, french_version=french_version, compact_mode=compact_mode)
+    handler.handle_reference(
+        first_arg, 
+        show_english=show_english, 
+        show_greek=show_greek, 
+        show_french=show_french,
+        show_arabic=show_arabic,
+        show_crossref=show_crossref, 
+        cross_refs=cross_refs,
+        show_crossref_text=args.crossref_full,
+        show_hebrew=show_hebrew,
+        french_version=args.bible or 'tob',
+        compact_mode=compact_mode
+    )
 
 if __name__ == "__main__":
     main()

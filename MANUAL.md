@@ -23,6 +23,7 @@ DESCRIPTION
        - Septuagint (LXX - Rahlfs 1935)
        - French Traduction Œcumenique de la Bible (TOB)
        - Bible de Jérusalem (BJ)
+       - New Arabic Version (NAV)
        - English Berean Interlinear Bible
 
        It features smart lazy-loading of datasets, verse-level cross-references,
@@ -39,7 +40,7 @@ COMMANDS
               -c, --collection: Collection name (e.g., 'notes'). 
                                 Automatically saved as data/references_nt_[name].json 
                                 or data/references_ot_[name].json based on source book.
-              -s, --crossref-source: Source verse (e.g., 'Mc 1:1')
+              -s, --source:     Source verse (e.g., 'Mc 1:1')
               -t, --target:     Target verse or reference note (e.g., 'Lc 1:1')
               --type:           Relation type (parallel, allusion, quotation, other). 
                                 Default: 'other'
@@ -75,9 +76,10 @@ OPTIONS
               - fr: French (TOB by default. Use -b bj for Bible de Jérusalem)
               - gr: Greek (N1904 for NT, LXX for OT)
               - hb: Hebrew (BHSA)
+              - ar: Arabic (NAV)
 
        -b, --bible [tob|bj]
-              Select the French text version (Translation) to display.
+              Select the text version (Translation) to display.
               Options: 'tob' (default), 'bj'.
 
        -c, --crossref
@@ -117,6 +119,10 @@ DATA SOURCES
               Bible de Jérusalem.
               Note: Requires manual setup (EPUB conversion). See ADD_SOURCES.md.
 
+       NAV (Arabic)
+              New Arabic Version (Ketab El Hayat).
+              Note: Requires manual setup (XML conversion). See ADD_SOURCES.md.
+
        OpenBible
               Cross-reference data provided by OpenBible.info,a modernized, evolution of the classic Treasury of Scripture Knowledge (TSK)
 
@@ -132,4 +138,7 @@ EXAMPLES
 
        biblecli list books
               Show all supported book names.
+
+       biblecli "Gen 1:1" --tr ar
+              Show Genesis 1:1 in Arabic (NAV).
 ```

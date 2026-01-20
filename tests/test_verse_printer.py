@@ -30,7 +30,7 @@ def mock_tob_api():
     mock.F.book.v.return_value = "Genèse"
     
     # Chapter 1
-    mock.L.d.side_effect = lambda n, otype: [200] if otype == 'chapter' else [300] if otype == 'verse' else []
+    mock.L.d.side_effect = lambda n, otype: [200] if otype == 'chapter' else [300] if otype == 'verse' else [400] if otype == 'word' else []
     
     mock.F.chapter.v.return_value = 1
     mock.F.verse.v.return_value = 1
@@ -81,9 +81,9 @@ def test_lxx_book_name_resolution(printer, mock_tob_api):
     # We need to ensure the printer calls TOB API looking for "Genèse"
     # The printer logic iterates F.otype.s('book') and checks F.book.v(n) == book_fr
     
-    # Setup the mock iterating over books to only have Genèse
+    # Setup the mock iterating over books to only have GEN
     def book_v_side_effect(n):
-        if n == 100: return "Genèse"
+        if n == 100: return "GEN"
         return "Autre"
     mock_tob_api.F.book.v.side_effect = book_v_side_effect
     mock_tob_api.F.otype.s.return_value = [100]
@@ -105,14 +105,63 @@ def test_lxx_book_name_resolution(printer, mock_tob_api):
     mock_tob_api.F.text.v.assert_called()
 
 def test_standard_book_name_resolution(printer, mock_tob_api):
-    # Test "Genesis" -> "Genèse"
+    # Test "Genesis" -> "GEN"
     
-    mock_tob_api.F.book.v.return_value = "Genèse"
+    mock_tob_api.F.book.v.return_value = "GEN"
     mock_tob_api.F.otype.s.return_value = [100]
     
     printer.print_verse(node=None, book_en="Genesis", chapter=1, verse=1, show_french=True, show_greek=False)
     
     mock_tob_api.F.text.v.assert_called()
+
+def test_get_nav_text_arabic(printer, mock_nav_app):
+    # Setup NAV provider to return mock_nav_app.api (that's what main.py does)
+    printer.nav_provider = MagicMock(return_value=mock_nav_app.api)
+    
+    # Test lookup
+    text = printer.get_nav_text("GEN", 1, 1)
+    
+    assert text == "Mock Arabic Text"
+    # Verify it used T.nodeFromSection with the normalized name
+    mock_nav_app.api.T.nodeFromSection.assert_called()
+    # It should have mapped "GEN" to "Genesis"
+    call_args = mock_nav_app.api.T.nodeFromSection.call_args[0][0]
+    assert "Genesis" in call_args
+
+def test_get_french_text_tob_word_join(printer, mock_tob_api):
+    # Setup mock_tob_api to return multiple words for a verse
+    # Node 300 is our verse node
+    mock_tob_api.F.otype.s.return_value = [100]
+    mock_tob_api.F.book.v.return_value = "GEN"
+    mock_tob_api.L.d.side_effect = lambda n, otype: [200] if otype == 'chapter' else [300] if otype == 'verse' else [10, 11] if (n==300 and otype=='word') else []
+    
+    def F_text_v_side_effect(n):
+        if n == 10: return "Mot1"
+        if n == 11: return "Mot2"
+        return ""
+    mock_tob_api.F.text.v.side_effect = F_text_v_side_effect
+    
+    text = printer.get_french_text("GEN", 1, 1)
+    assert text == "Mot1 Mot2"
+
+def test_get_bj_text(printer, mock_tob_api):
+    # We can reuse mock_tob_api structure for BJ if we set it to return from provider
+    printer.bj_provider = MagicMock(return_value=mock_tob_api)
+    
+    mock_tob_api.F.otype.s.return_value = [100]
+    mock_tob_api.F.book.v.return_value = "GEN"
+    mock_tob_api.F.chapter.v.return_value = 1
+    mock_tob_api.F.verse.v.return_value = 1
+    mock_tob_api.L.d.side_effect = lambda n, otype: [200] if otype == 'chapter' else [300] if otype == 'verse' else [10, 11] if (n==300 and otype=='word') else []
+    
+    def F_text_v_side_effect(n):
+        if n == 10: return "BJ1"
+        if n == 11: return "BJ2"
+        return ""
+    mock_tob_api.F.text.v.side_effect = F_text_v_side_effect
+    
+    text = printer.get_bj_text("Genesis", 1, 1)
+    assert text == "BJ1 BJ2"
 
 def test_lxx_greek_text_fetching(printer, mock_lxx_app):
     pass # Existing placeholder/todo?

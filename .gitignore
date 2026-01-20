@@ -1,2 +1,11 @@
-.venv
+.venv/
 .tf/
+
+# Ignore ephemeral epub data but preserve the directory structure via .gitkeep
+epubs/input/**/*
+!epubs/input/**/
+!epubs/input/**/.gitkeep
+
+epubs/output/**/*
+!epubs/output/**/
+!epubs/output/**/.gitkeep

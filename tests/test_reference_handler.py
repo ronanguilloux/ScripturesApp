@@ -27,20 +27,13 @@ def handler(mock_app, normalizer, mock_printer):
 
 def test_single_ref_calls_printer(handler, mock_app, mock_printer):
     # Setup mock to return a node
-    mock_app.nodeFromSectionStr.return_value = 1001
+    # Since John is NT, ReferenceHandler will use T.nodeFromSection((book, ch, vs))
+    mock_app.api.T.nodeFromSection.return_value = 1001
     
     handler.handle_reference("John 1:1")
     
-    mock_app.nodeFromSectionStr.assert_called_with("John 1:1") # Or normalized
-    # ReferenceHandler standardizes inputs before calling nodeFromSectionStr?
-    # Actually, ReferenceHandler attempts normalize inside?
-    # handle_reference replaces ',' with ':' and checks abbreviations.
-    # "John 1:1" -> "JHN 1:1" via abbreviation load? 
-    # Let's see normalizer.abbreviations.
-    # "John" -> "John" or "JHN"?
-    # In BookNormalizer, "John" maps to "JHN"? No, ABBREVIATIONS maps to internal key (often English label or dedicated key).
+    mock_app.api.T.nodeFromSection.assert_called_with(("John", 1, 1))
     
-    # Let's rely on what the mock receives.
     # If logic works, it should call printer.print_verse(node=1001, ...)
     mock_printer.print_verse.assert_called()
     assert mock_printer.print_verse.call_args[1]['node'] == 1001
@@ -65,9 +58,9 @@ def test_chapter_ref_calls_printer_loop(handler, mock_app, mock_printer):
     assert mock_printer.print_verse.call_count == 3
     # Check calls
     expected_calls = [
-        call(node=1001, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob'),
-        call(node=1002, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob'),
-        call(node=1003, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob')
+        call(node=1001, show_english=False, show_greek=True, show_french=True, show_arabic=False, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob', compact_mode=0),
+        call(node=1002, show_english=False, show_greek=True, show_french=True, show_arabic=False, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob', compact_mode=0),
+        call(node=1003, show_english=False, show_greek=True, show_french=True, show_arabic=False, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob', compact_mode=0)
     ]
     mock_printer.print_verse.assert_has_calls(expected_calls)
     mock_printer.print_verse.assert_has_calls(expected_calls)
@@ -105,6 +98,12 @@ def test_handle_ref_bj_version(handler, mock_app, mock_printer):
     # Setup success ref
     mock_app.nodeFromSectionStr.return_value = 1001
     
+    # Setup mock_app to have dummy API components to avoid 'nodeFromSection' errors
+    mock_app.api = MagicMock()
+    mock_app.api.F = MagicMock()
+    mock_app.api.L = MagicMock()
+    mock_app.api.T = MagicMock()
+
     # Test defaulting to 'tob'
     handler.handle_reference("John 1:1")
     args_default = mock_printer.print_verse.call_args[1]
@@ -114,3 +113,57 @@ def test_handle_ref_bj_version(handler, mock_app, mock_printer):
     handler.handle_reference("John 1:1", french_version='bj')
     args_bj = mock_printer.print_verse.call_args[1]
     assert args_bj.get('french_version') == 'bj'
+
+def test_handle_ref_show_arabic(handler, mock_app, mock_printer):
+    # Setup success ref (N1904)
+    mock_app.api.T.nodeFromSection.return_value = 1001
+    
+    handler.handle_reference("John 1:1", show_arabic=True)
+    
+    args = mock_printer.print_verse.call_args[1]
+    assert args['show_arabic'] is True
+
+def test_handle_ref_ot_no_forced_hebrew(handler, mock_app, mock_printer):
+    # Setup success ref (LXX/N1904 fixture might need adjustment, but focus on the flag)
+    # ReferenceHandler uses n1904_provider for the app in single_ref fallback if not OT?
+    # No, it uses code to decide.
+    
+    # Genesis is OT
+    mock_app.nodeFromSectionStr.return_value = 1001
+    handler.normalizer.is_ot = MagicMock(return_value=True)
+    handler.normalizer.is_nt = MagicMock(return_value=False)
+    
+    handler.handle_reference("Gn 1:1", show_hebrew=False)
+    
+    args = mock_printer.print_verse.call_args[1]
+    # Verify it stayed False (or at least was passed as False if that's what we want)
+    assert args['show_hebrew'] is False
+
+def test_handle_ref_compact_mode(handler, mock_app, mock_printer):
+    # Setup success ref (N1904)
+    mock_app.api.T.nodeFromSection.return_value = 1001
+    
+    handler.handle_reference("John 1:1", compact_mode=1)
+    
+    args = mock_printer.print_verse.call_args[1]
+    assert args['compact_mode'] == 1
+
+def test_handle_ref_very_compact_mode(handler, mock_app, mock_printer):
+    # Setup success ref (N1904)
+    mock_app.api.T.nodeFromSection.return_value = 1001
+    
+    handler.handle_reference("John 1:1", compact_mode=2)
+    
+    args = mock_printer.print_verse.call_args[1]
+    assert args['compact_mode'] == 2
+
+def test_handle_ref_cross_refs(handler, mock_app, mock_printer):
+    mock_app.api.T.nodeFromSection.return_value = 1001
+    mock_refs = {"JHN.1.1": {"relations": [{"target": "GEN.1.1"}]}}
+    
+    handler.handle_reference("John 1:1", show_crossref=True, cross_refs=mock_refs, show_crossref_text=True)
+    
+    args = mock_printer.print_verse.call_args[1]
+    assert args['show_crossref'] is True
+    assert args['cross_refs'] == mock_refs
+    assert args['show_crossref_text'] is True

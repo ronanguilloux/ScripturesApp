@@ -1,10 +1,12 @@
 class VersePrinter:
-    def __init__(self, tob_provider, n1904_provider, normalizer, reference_db, bhsa_provider=None, bj_provider=None):
+    def __init__(self, tob_provider, n1904_provider, normalizer, reference_db, bhsa_provider=None, bj_provider=None, nav_provider=None):
         self.tob_provider = tob_provider
         self.n1904_provider = n1904_provider
         self.bj_provider = bj_provider
+        self.nav_provider = nav_provider
         self._tob_api = None
         self._bj_api = None
+        self._nav_api = None
         self._n1904_app = None
         self.lxx = None 
         self.normalizer = normalizer
@@ -29,6 +31,12 @@ class VersePrinter:
              self._n1904_app = self.n1904_provider()
         return self._n1904_app
 
+    @property
+    def nav_api(self):
+        if self._nav_api is None and self.nav_provider:
+            self._nav_api = self.nav_provider()
+        return self._nav_api
+
     def get_hebrew_text(self, book_en, chapter_num, verse_num):
         if not self.bhsa_provider: 
             return None
@@ -48,6 +56,38 @@ class VersePrinter:
             text = " ".join([bhsa_app.api.F.g_word_utf8.v(w) for w in words])
             return text
         return None
+
+    def get_nav_text(self, book_en, chapter_num, verse_num):
+        if not self.nav_api:
+            return ""
+        
+        # NAV uses English titles (e.g. Genesis) matching features.
+        # Ensure we use the correct book name.
+        # N1904 'book_en' typically matches standard English.
+        # Note: NAV features are stored as Strings (default), so we must pass str(chapter).
+        
+        
+        # Normalize book name to match NAV (usually expects full English name like "Genesis")
+        # Try code lookup first
+        mapped_name = self.normalizer.code_to_n1904.get(book_en)
+        if not mapped_name:
+             # Try abbreviations
+             mapped_name = self.normalizer.abbreviations.get(book_en)
+        
+        if mapped_name:
+             book_en = mapped_name
+             
+        node = self.nav_api.T.nodeFromSection((book_en, str(chapter_num), str(verse_num)))
+        
+        if not node:
+             # Try replacing spaces or underscores if mismatch
+             node = self.nav_api.T.nodeFromSection((book_en.replace("_", " "), str(chapter_num), str(verse_num)))
+
+        if not node:
+             return f"[NAV: Verse not found]"
+
+        # Get text
+        return self.nav_api.T.text(node)
 
     def get_bj_text(self, book_en, chapter_num, verse_num):
         if not self.bj_api:
@@ -135,35 +175,26 @@ class VersePrinter:
         F = self.tob_api.F
         L = self.tob_api.L
         
-        # Normalize book_en to ensure we match the keys in n1904_to_tob
-        book_fr = self.normalizer.n1904_to_tob.get(book_en)
+        # 1. Normalize book_en to code
+        book_code = self.normalizer.n1904_to_code.get(book_en)
+        if not book_code:
+             # Try abbreviation
+             canon = self.normalizer.abbreviations.get(book_en)
+             if canon:
+                 book_code = self.normalizer.n1904_to_code.get(canon)
         
-        if not book_fr:
-            # Try to find code
-            book_code = self.normalizer.n1904_to_code.get(book_en) or \
-                        self.normalizer.n1904_to_code.get(self.normalizer.abbreviations.get(book_en, ""))
-                        
-            if book_code:
-                en_key = self.normalizer.code_to_n1904.get(book_code)
-                if en_key:
-                    book_fr = self.normalizer.n1904_to_tob.get(en_key)
-
-        if not book_fr:
-            # Try direct mapping if not found (e.g. if N1904 uses spaces instead of underscores)
-            book_fr = self.normalizer.n1904_to_tob.get(book_en.replace(" ", "_"))
-            
-        if not book_fr:
+        if not book_code:
             return f"[TOB: Book '{book_en}' not found]"
 
         # 1. Find book node
         book_node = None
         for n in F.otype.s('book'):
-            if F.book.v(n) == book_fr:
+            if F.book.v(n) == book_code:
                 book_node = n
                 break
                 
         if not book_node:
-            return f"[TOB: Book '{book_fr}' node not found]"
+            return f"[TOB: Book '{book_code}' node not found]"
 
         # 2. Find chapter node
         chapter_node = None
@@ -185,8 +216,9 @@ class VersePrinter:
         if not verse_node:
             return "" # Verse might not exist in TOB or mapping issue
 
-        # 4. Get text
-        return F.text.v(verse_node)
+        # 4. Get text (Join words)
+        words = L.d(verse_node, otype='word')
+        return " ".join([F.text.v(w) for w in words])
 
     def format_ref_fr(self, target_str):
         """
@@ -233,7 +265,7 @@ class VersePrinter:
             
         return target_str
 
-    def print_verse(self, node=None, book_en=None, chapter=None, verse=None, show_english=False, show_greek=True, show_french=True, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=None, show_hebrew=False, french_version='tob', compact_mode=0):
+    def print_verse(self, node=None, book_en=None, chapter=None, verse=None, show_english=False, show_greek=True, show_french=True, show_arabic=False, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=None, show_hebrew=False, french_version='tob', compact_mode=0):
         if not source_app:
             source_app = self.app
             
@@ -376,7 +408,7 @@ class VersePrinter:
                 english_text.append(trans)
             print(f"{get_prefix()}{' '.join(english_text)}")
         
-        # French translation (TOB or BJ)
+        # French/Arabic translation (TOB, BJ, NAV)
         if show_french:
             french_text = ""
             if french_version == 'bj':
@@ -384,6 +416,7 @@ class VersePrinter:
             else:
                 # Default to TOB
                 french_text = self.get_french_text(book_en, chapter, verse)
+
 
             if french_text:
                  # Check for None/Empty or Error strings
@@ -398,6 +431,15 @@ class VersePrinter:
                          # Only if it is NOT a "not found" error which is common for cross-versions
                          pass
  
+        if show_arabic:
+            # print(f"DEBUG: show_arabic is True. Book: {book_en}, Ch: {chapter}, Vs: {verse}")
+            arabic_text = self.get_nav_text(book_en, chapter, verse)
+            # print(f"DEBUG: arabic_text: {arabic_text}")
+            if arabic_text:
+                 # Check/Clean text
+                 if not arabic_text.startswith("[NAV:"):
+                      print(f"{get_prefix()}{arabic_text}")
+
         # Cross-references (Header logic might differ? No, cross-refs usually separate block)
         if show_crossref:
             # We need the 3-letter code for the current book to look up refs
@@ -507,6 +549,8 @@ class VersePrinter:
                                         txt = ""
                                         if french_version == 'bj':
                                             txt = self.get_bj_text(b_en, ch, vs)
+                                        elif french_version == 'nav':
+                                            txt = self.get_nav_text(b_en, ch, vs)
                                         else:
                                             txt = self.get_french_text(b_en, ch, vs)
                                             

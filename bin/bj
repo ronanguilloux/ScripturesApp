@@ -4,4 +4,9 @@
 BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Call biblecli with the passed arguments and force -s bj
+# Using "$@" to pass all arguments (e.g. verse ref, other flags)
+# And appending -s bj
+# Note: Since biblecli logic might depend on argument order or just argparse handles it.
+# argparse usually handles flags anywhere.
+# Pass -s bj at the end to be safe or explicit.
 "$BIN_DIR/biblecli" "$@" -b bj

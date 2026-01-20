@@ -6,8 +6,8 @@ from html.parser import HTMLParser
 import sys
 
 # Configuration
-EPUB_DIR = 'tmp/BJ-EPUB-to-Text-Fabric/OEBPS' # Relative to workspace root
-OUTPUT_DIR = 'output/brand_new_bj/1.0'
+EPUB_DIR = 'epubs/input/BJ/OEBPS' # Relative to workspace root
+OUTPUT_DIR = 'epubs/output/BJ/1.0'
 BIBLE_BOOKS_JSON = 'data/bible_books.json'
 
 # Load Bible Books Mapping
