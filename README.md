@@ -62,6 +62,7 @@ When you run the tool for the first time with an internet connection, it will au
     │   └── LXX/tf/[version]/     # Septuagint
     └── ETCBC/
         └── bhsa/tf/[version]/    # Hebrew Masoretic Text
+```
 
 ### 2. French TOB, Bible de Jerusalme, and Ketab al-Nabi translations (Manual Setup, personal copy required)
 
