@@ -62,33 +62,14 @@ When you run the tool for the first time with an internet connection, it will au
     │   └── LXX/tf/[version]/     # Septuagint
     └── ETCBC/
         └── bhsa/tf/[version]/    # Hebrew Masoretic Text
-```
 
-### 2. French TOB Data (Manual Setup, personal copy required)
-Due to copyright restrictions, the **Traduction Œcumenique de la Bible (TOB)** text is **not included** and cannot be automatically downloaded.
+### 2. French TOB, Bible de Jerusalme, and Ketab al-Nabi translations (Manual Setup, personal copy required)
 
-To add and display the TOB French text, you must
-1. **Acquire an EPUB version** of the TOB [here](https://e-librairie.leclerc/product/9782853002011_9782853002011_2/la-traduction-oecumenique-de-la-bible-tob-a-notes-essentielles)
-2. **Follow the instructions** in [ADD_SOURCES.md](ADD_SOURCES.md) and use the `converters/convert_tob_epub.py` script.
+The [ADD_SOURCES.md](ADD_SOURCES.md) file contains all technical instructions to add the TOB French text and how to 
+1. Respect copyright and licensing restrictions, acquiring online an EPUB copy of these editions.
+2. Leverage your private copy right (in France) plus the DRM-free EPUB open formats to extract the text and create your own Text-Fabric dataset.
 
-### 3. French BJ Data (Manual Setup, personal copy required)
-Similar to the TOB, the **Bible de Jérusalem (BJ)** is not included.
-
-To add the BJ text:
-1.  **Acquire the EPUB** version of the Bible de Jérusalem [here](https://www.fnac.com/livre-numerique/a7929034/CTAD-LA-BIBLE-DE-JERUSALEM).
-2.  **Convert it** using the provided script:
-    *   Unzip your EPUB file.
-    *   Run `converters/convert_bj_epub.py` (you may need to adjust paths in the script).
-3.  **Install it locally**:
-    *   `mkdir -p ~/text-fabric-data/BJ/1.0`
-    *   Copy the generated TF files to this directory.
-
-Structure:
-```
-~/text-fabric-data/BJ/1.0/
-    ├── otype.tf
-    ├── ...
-```
+A detailed process is described in [ADD_SOURCES.md](ADD_SOURCES.md) and will allow you to add the **Traduction Œcumenique de la Bible (TOB)** and the Bible de Jerusalem (BJ) French translations. Same for the Arabic NAV translation.
 
 ## Usage
 
@@ -308,8 +289,8 @@ The lazy loading logic consists in loading the minimal number of datasets based 
 *   **OT Queries**: `LXX` + `BHSA` + `TOB` are loaded. `N1904` is skipped.
 
 **Performance Improvement (User CPU)**:
-*   `Mc 1:1`: **2.36s** (down from 3.71s, **36% faster**).
-*   `Gn 1:1`: **5.87s** (down from 8.26s, **29% faster**).
+*   `Mc 1:1`: **~3.4s** (Baseline including TOB load).
+*   `Gn 1:1`: **3.5s** (down from 5.87s, **40% faster**).
 
 ## Performance
 
@@ -320,24 +301,24 @@ Measured using reference: **Mc 1:1**
 
 | Command | Time | Notes |
 | :--- | :--- | :--- |
-| `tob "Mc 1:1"` (Default) | **~4.0s** | Baseline (Python startup + N1904 + TOB) |
-| `tob "Mc 1:1" --tr fr` | **~3.7s** | Minimal overhead (Skips BHSA) |
-| `tob "Mc 1:1" --tr gr` | **~3.7s** | Minimal overhead (Skips BHSA & TOB) |
+| `tob "Mc 1:1"` (Default) | **~3.3s** | Baseline (Python startup + N1904 + TOB) |
+| `tob "Mc 1:1" --tr fr` | **~3.3s** | Minimal overhead (Skips BHSA) |
+| `tob "Mc 1:1" --tr gr` | **~3.0s** | Minimal overhead (Skips BHSA & TOB) |
 
 ### Old Testament (OT)
 Measured using reference: **Gn 1:1**
 
 | Command | Time | Notes |
 | :--- | :--- | :--- |
-| `tob "Gn 1:1"` (Default) | **~6.0s** | **+2.3s vs NT** (Loads LXX + BHSA + TOB) |
-| `tob "Gn 1:1" --tr fr` | **~5.8s** | Forces Hebrew display (Loads LXX + BHSA + TOB) |
-| `tob "Gn 1:1" --tr hb` | **~5.8s** | Loads LXX + BHSA |
-| `tob "Gn 1:1" --tr en fr gr hb` | **~10.9s** | Full load (System overhead) |
+| `tob "Gn 1:1"` (Default) | **~3.5s** | Balanced load (LXX + BHSA + TOB) |
+| `tob "Gn 1:1" --tr fr` | **~1.0s** | Fast French lookup (Loads TOB only if cached) |
+| `tob "Gn 1:1" --tr hb` | **~3.2s** | Loads BHSA |
+| `tob "Gn 1:1" --tr en fr gr hb` | **~6.5s** | Full load (System overhead) |
 
 **Key Findings:**
-- **Baseline**: ~3.7-4.0s startup time for NT.
-- **Lazy Loading**: Accessing OT adds ~2s (LXX + BHSA).
-- **Hebrew**: For OT queries, Hebrew is displayed by default, incurring the BHSA load cost (`~2s`). For NT queries, it is skipped, saving that time.
+- **Baseline**: ~3.0-3.4s startup time for NT.
+- **OT Performance**: Accessing OT is now optimized at ~3.5s (comparable to NT).
+- **Hebrew**: For OT queries, Hebrew is displayed by default. Lazy loading ensures BHSA is only loaded when necessary.
 
 ## Reference Sources
 
