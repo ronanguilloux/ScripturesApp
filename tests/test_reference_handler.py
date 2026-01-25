@@ -44,7 +44,7 @@ def test_chapter_ref_calls_printer_loop(handler, mock_app, mock_printer):
     # 2. Iterate verses
     
     # Mock finding chapter
-    # Mock finding chapter node via app helper
+    # Mock finding chapter node via app helper (Section lookup for chapter)
     mock_app.nodeFromSectionStr.return_value = 500
     mock_app.api.F.otype.v.return_value = 'chapter'
     
@@ -56,13 +56,13 @@ def test_chapter_ref_calls_printer_loop(handler, mock_app, mock_printer):
     handler.handle_reference("John 1")
     
     assert mock_printer.print_verse.call_count == 3
+
     # Check calls
     expected_calls = [
         call(node=1001, show_english=False, show_greek=True, show_french=True, show_arabic=False, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob', compact_mode=0),
         call(node=1002, show_english=False, show_greek=True, show_french=True, show_arabic=False, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob', compact_mode=0),
         call(node=1003, show_english=False, show_greek=True, show_french=True, show_arabic=False, show_crossref=False, cross_refs=None, show_crossref_text=False, source_app=mock_app, show_hebrew=False, french_version='tob', compact_mode=0)
     ]
-    mock_printer.print_verse.assert_has_calls(expected_calls)
     mock_printer.print_verse.assert_has_calls(expected_calls)
 
 def test_bhsa_lazy_load(handler, mock_app):
@@ -86,9 +86,17 @@ def test_bhsa_lazy_load(handler, mock_app):
 
 def test_handle_ref_show_hebrew(handler, mock_app, mock_printer):
     # Setup success ref (N1904)
-    mock_app.nodeFromSectionStr.return_value = 1001
+    # Ensure api.T.nodeFromSection exists (just in case)
+    mock_app.api.T.nodeFromSection = MagicMock(return_value=1001)
     
-    # Use OT book for Hebrew test, as NT forces it False
+    # Use OT book for Hebrew test.
+    # N1904 (NT) forces show_hebrew=False.
+    # Use Genesis (OT).
+    # Normalizer should detect OT.
+    # ReferenceHandler will use lxx_provider.
+    # lxx_provider is a MagicMock, returning a MagicMock app.
+    # mock_lxx_app.nodeFromSectionStr(...) returns a MagicMock node.
+    # This is sufficient to trigger print_verse.
     handler.handle_reference("Genesis 1:1", show_hebrew=True)
     
     args = mock_printer.print_verse.call_args[1]
@@ -96,7 +104,7 @@ def test_handle_ref_show_hebrew(handler, mock_app, mock_printer):
 
 def test_handle_ref_bj_version(handler, mock_app, mock_printer):
     # Setup success ref
-    mock_app.nodeFromSectionStr.return_value = 1001
+    mock_app.api.T.nodeFromSection = MagicMock(return_value=1001)
     
     # Setup mock_app to have dummy API components to avoid 'nodeFromSection' errors
     mock_app.api = MagicMock()

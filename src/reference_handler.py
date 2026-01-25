@@ -168,11 +168,22 @@ class ReferenceHandler:
                         
                         # Print Header once if in compact mode
                         if compact_mode > 0:
-                            # Use TOB name if possible
                             if ' ' in book_chapter:
                                 b_name = book_chapter.rsplit(' ', 1)[0]
-                                f_name = self.normalizer.n1904_to_tob.get(b_name, b_name)
-                                print(f"\n{f_name} {book_chapter.split()[-1]}:{start_v}-{end_v}")
+                                # localized name logic
+                                header_name = b_name
+                                if not show_english:
+                                     # Try to map to French
+                                     fr_name = self.normalizer.n1904_to_tob.get(b_name)
+                                     if not fr_name:
+                                         # Try code based lookup
+                                         code = self.normalizer.n1904_to_code.get(b_name)
+                                         if code:
+                                             fr_name = self.normalizer.n1904_to_tob.get(self.normalizer.code_to_n1904.get(code))
+                                     
+                                     if fr_name: header_name = fr_name
+                                
+                                print(f"\n{header_name} {book_chapter.split()[-1]}:{start_v}-{end_v}")
                             else:
                                 print(f"\n{book_chapter} {start_v}-{end_v}")
 
@@ -263,16 +274,25 @@ class ReferenceHandler:
                 # If compact mode is on, we print Header once.
                 if compact_mode > 0:
                      # Calculate header
-                     # Assuming ref_str is clean
-                     # We can reconstruct or use parts
-                     print(f"\n{ref_str}") # Simplify for now or look up French name?
-                     # Ideally use printer logic to get header name, but that's inside print_verse.
-                     # But print_verse hides it. 
-                     # Let's let print_verse handle SINGLE verse cases?
-                     # NO, print_verse suppresses header in compact mode!
-                     # So we MUST print header here for single verse too.
-                     # Let's use simplified header or existing one.
-                     pass
+                     header_str = ref_str
+                     if not show_english:
+                         # Attempt to localize the book part of ref_str
+                         # ref_str could be "Luke 24:49" or "Luke 24:49" (normalized)
+                         if " " in ref_str:
+                             parts = ref_str.rsplit(" ", 1) # Split book / chapter:verse
+                             b_name = parts[0]
+                             rest = parts[1]
+                             
+                             fr_name = self.normalizer.n1904_to_tob.get(b_name)
+                             if not fr_name:
+                                 code = self.normalizer.n1904_to_code.get(b_name)
+                                 if code:
+                                      fr_name = self.normalizer.n1904_to_tob.get(self.normalizer.code_to_n1904.get(code))
+                             
+                             if fr_name:
+                                 header_str = f"{fr_name} {rest}"
+                     
+                     print(f"\n{header_str}")
                      
                 self.printer.print_verse(node=node, show_english=show_english, show_greek=show_greek, show_french=show_french, show_arabic=show_arabic, show_crossref=show_crossref, cross_refs=cross_refs, show_crossref_text=show_crossref_text, source_app=source_app, show_hebrew=show_hebrew, french_version=french_version, compact_mode=compact_mode)
             else:
