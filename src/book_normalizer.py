@@ -110,7 +110,7 @@ class BookNormalizer:
         Returns (book_code, chapter, verse, standardized_str) or None if invalid.
         """
         # Simple cleanup
-        ref_str = ref_str.strip().replace(',', ':')
+        ref_str = ref_str.strip().replace(',', ':').replace('_', ' ')
         
         # 1. Identify valid book name/abbr
         # We need to split space-separated or find longest match

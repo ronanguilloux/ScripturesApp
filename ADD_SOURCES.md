@@ -103,9 +103,10 @@ The Arabic Bible®, under NAV Copyright (1988 Biblica), called the New Arabic Ve
 
 We provide a converter script for the Zefania XML version of it, found on Github.
 
-1.  **Download**: The XML file `ar-Aranav-New-Arabic-Ketab-el-hayat.xml` is [made available online here](https://github.com/kohelet-net-admin/zefania-xml-bibles/tree/master/Bibles/ARA/New%20Arabic%20Version%20(Ketab%20El%20Hayat)).
+1.  **Download**: The XML file `SF_2012-01-07_ARA_ARANAV_(NEW ARABIC VERSION (KETAB EL HAYAT)).xml` is [made available online here](https://raw.githubusercontent.com/kohelet-net-admin/zefania-xml-bibles/master/Bibles/ARA/New%20Arabic%20Version%20(Ketab%20El%20Hayat)/SF_2012-01-07_ARA_ARANAV_(NEW%20ARABIC%20VERSION%20(KETAB%20EL%20HAYAT)).xml).
 2.  **Convert**:
     *   Place the XML file in `epubs/input/NAV/`.
+    *   Rename it to `ar-Aranav-New-Arabic-Ketab-el-hayat.xml`.
     *   Run `python3 converters/convert_nav_xml.py`.
 3.  **Install**:
     *   Move the output directory content from `epubs/output/NAV/1.0` into `~/text-fabric-data/NAV/1.0`.

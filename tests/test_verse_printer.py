@@ -233,3 +233,59 @@ def test_print_verse_calls_bj(printer, mock_bj_api, mock_tob_api):
     # Verify TOB API was NOT used for text fetching (though it might be checked for existence/loading)
     # Actually, printer logic: if show_french: if french_version == 'bj': ... else: ...
     mock_tob_api.F.text.v.assert_not_called()
+
+def test_print_verse_arabic(printer):
+    # Setup Mock NAV App/API
+    mock_nav_api = MagicMock()
+    mock_nav_api.T.nodeFromSection.return_value = 100
+    mock_nav_api.T.text.return_value = "Arabic Text"
+    
+    # Inject into printer
+    printer.nav_provider = MagicMock(return_value=mock_nav_api)
+    
+    # Call with show_arabic=True
+    # We strip other languages to check isolation or just output
+    printer.print_verse(node=None, book_en="Genesis", chapter=1, verse=1, show_arabic=True, show_english=False, show_french=False, show_greek=False)
+    
+    mock_nav_api.T.text.assert_called_with(100)
+
+def test_print_verse_compact_mode_1(printer, mock_tob_api, capsys):
+    # Mode 1: "v1. Text"
+    # Ensure regular TOB setup works
+    mock_tob_api.F.otype.s.return_value = [100]
+    mock_tob_api.F.book.v.return_value = "Genèse"
+    mock_tob_api.F.text.v.return_value = "French Text"
+    
+    printer.print_verse(node=None, book_en="Genesis", chapter=1, verse=1, show_french=True, compact_mode=1, show_greek=False, show_english=False)
+    
+    captured = capsys.readouterr()
+    # Verification
+    # Header should NOT be present
+    assert "Genèse 1:1" not in captured.out
+    # Prefix "v1. " should be present
+    assert "v1. French Text" in captured.out
+
+def test_print_verse_compact_mode_2(printer, mock_tob_api, capsys):
+    # Mode 2: "Text" only (very compact)
+    mock_tob_api.F.otype.s.return_value = [100]
+    mock_tob_api.F.book.v.return_value = "Genèse"
+    mock_tob_api.F.text.v.return_value = "French Text"
+    
+    printer.print_verse(node=None, book_en="Genesis", chapter=1, verse=1, show_french=True, compact_mode=2, show_greek=False, show_english=False)
+    
+    captured = capsys.readouterr()
+    # Verification
+    assert "Genèse 1:1" not in captured.out
+    assert "v1." not in captured.out
+    assert "French Text" in captured.out
+
+def test_print_verse_header_logic(printer, mock_tob_api, capsys):
+    # Test standard mode (0) prints header correctly
+    mock_tob_api.F.otype.s.return_value = [100]
+    mock_tob_api.F.book.v.return_value = "Genèse"
+    
+    printer.print_verse(node=None, book_en="Genesis", chapter=1, verse=1, show_french=True, compact_mode=0, show_greek=False)
+    
+    captured = capsys.readouterr()
+    assert "Genèse 1:1" in captured.out
+

@@ -83,3 +83,23 @@ def test_comprehensive_aliases(normalizer):
         res = normalizer.normalize_reference(ref)
         assert res is not None, f"Failed to normalize {ref}"
         assert res[0] == expected_code, f"Expected {expected_code} for {ref}, got {res[0]}"
+
+def test_normalization_spaces_in_book_names(normalizer):
+    # Test books with spaces in names (Commit c7ebbb8 verification)
+    
+    # "1 John" -> "1JN"
+    res = normalizer.normalize_reference("1 John 1:1")
+    assert res is not None
+    assert res[0] == "1JN"
+
+    # "Song of Songs" -> "SNG" (Assuming SNG is the code, or Cant)
+    # Let's check a known one with spaces if available in aliases, e.g. "1 Samuel"
+    res = normalizer.normalize_reference("1 Samuel 1:1")
+    assert res is not None
+    assert res[0] == "1SA"
+    
+    # "1_Samuel" (underscore input)
+    res = normalizer.normalize_reference("1_Samuel 1:1")
+    assert res is not None
+    assert res[0] == "1SA"
+
