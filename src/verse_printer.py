@@ -175,26 +175,40 @@ class VersePrinter:
         F = self.tob_api.F
         L = self.tob_api.L
         
-        # 1. Normalize book_en to code
-        book_code = self.normalizer.n1904_to_code.get(book_en)
-        if not book_code:
-             # Try abbreviation
-             canon = self.normalizer.abbreviations.get(book_en)
-             if canon:
-                 book_code = self.normalizer.n1904_to_code.get(canon)
+        # TOB TF uses the French Name as the 'book' feature value (e.g. "Genèse", "1 Corinthiens")
+        # We need to map the input book_en (N1904 key) to this French Name.
         
-        if not book_code:
-            return f"[TOB: Book '{book_en}' not found]"
+        book_fr = self.normalizer.n1904_to_tob.get(book_en)
+        
+        # Fallback: if not found directly, maybe input was a code or abbreviation?
+        if not book_fr:
+            # Try to resolve to code
+            code = self.normalizer.n1904_to_code.get(book_en)
+            if not code:
+                # Try abbreviation
+                canon = self.normalizer.abbreviations.get(book_en)
+                if canon:
+                    code = self.normalizer.n1904_to_code.get(canon)
+            
+            if code:
+                # Back to English Key -> French key
+                en_key = self.normalizer.code_to_n1904.get(code)
+                if en_key:
+                    book_fr = self.normalizer.n1904_to_tob.get(en_key)
+
+        if not book_fr:
+             # Last resort: maybe it is already the french name or code?
+             book_fr = book_en
 
         # 1. Find book node
         book_node = None
         for n in F.otype.s('book'):
-            if F.book.v(n) == book_code:
+            if F.book.v(n) == book_fr:
                 book_node = n
                 break
                 
         if not book_node:
-            return f"[TOB: Book '{book_code}' node not found]"
+            return f"[TOB: Book '{book_fr}' node not found]"
 
         # 2. Find chapter node
         chapter_node = None
@@ -216,7 +230,12 @@ class VersePrinter:
         if not verse_node:
             return "" # Verse might not exist in TOB or mapping issue
 
-        # 4. Get text (Join words)
+        # 4. Get text
+        # Check if the dataset uses 'verse' as the slot type (no words)
+        if F.otype.slotType == 'verse':
+             return F.text.v(verse_node)
+        
+        # Standard: Join words
         words = L.d(verse_node, otype='word')
         return " ".join([F.text.v(w) for w in words])
 

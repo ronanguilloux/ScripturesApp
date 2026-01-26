@@ -24,6 +24,9 @@ def mock_tob_api():
     mock.F = MagicMock()
     mock.L = MagicMock()
     
+    # Mock slotType to 'word' (default behavior for old datasets)
+    mock.F.otype.slotType = 'word'
+    
     # Setup some basic book/chapter/verse data for TOB
     # We need to simulate finding "Genèse"
     mock.F.otype.s.return_value = [100] # book node
@@ -83,7 +86,7 @@ def test_lxx_book_name_resolution(printer, mock_tob_api):
     
     # Setup the mock iterating over books to only have GEN
     def book_v_side_effect(n):
-        if n == 100: return "GEN"
+        if n == 100: return "Genèse"
         return "Autre"
     mock_tob_api.F.book.v.side_effect = book_v_side_effect
     mock_tob_api.F.otype.s.return_value = [100]
@@ -105,9 +108,9 @@ def test_lxx_book_name_resolution(printer, mock_tob_api):
     mock_tob_api.F.text.v.assert_called()
 
 def test_standard_book_name_resolution(printer, mock_tob_api):
-    # Test "Genesis" -> "GEN"
+    # Test "Genesis" -> "Genèse" resolution (via normalizer)
     
-    mock_tob_api.F.book.v.return_value = "GEN"
+    mock_tob_api.F.book.v.return_value = "Genèse"
     mock_tob_api.F.otype.s.return_value = [100]
     
     printer.print_verse(node=None, book_en="Genesis", chapter=1, verse=1, show_french=True, show_greek=False)
@@ -130,9 +133,12 @@ def test_get_nav_text_arabic(printer, mock_nav_app):
 
 def test_get_french_text_tob_word_join(printer, mock_tob_api):
     # Setup mock_tob_api to return multiple words for a verse
+    # Ensure slotType is 'word'
+    mock_tob_api.F.otype.slotType = 'word'
+    
     # Node 300 is our verse node
     mock_tob_api.F.otype.s.return_value = [100]
-    mock_tob_api.F.book.v.return_value = "GEN"
+    mock_tob_api.F.book.v.return_value = "Genèse"
     mock_tob_api.L.d.side_effect = lambda n, otype: [200] if otype == 'chapter' else [300] if otype == 'verse' else [10, 11] if (n==300 and otype=='word') else []
     
     def F_text_v_side_effect(n):
