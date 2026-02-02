@@ -17,7 +17,7 @@ from book_normalizer import BookNormalizer
 from tf.app import use
 from tf.fabric import Fabric
 
-app = typer.Typer(help="BibleCLI - Modern Python Bible Reader")
+app = typer.Typer(help="BibleCLI - Modern Python Bible Reader", context_settings={"help_option_names": ["-h", "--help"]})
 
 class AdapterFactory:
     _adapter = None
@@ -71,7 +71,101 @@ def main(
     extra_args: Annotated[Optional[List[str]], typer.Argument(help="Extra translation arguments for compatibility")] = None,
 ):
     """
-    BibleCLI - Modern Python Bible Reader
+    BibleCLI - Command-line interface for the Greek New Testament & Hebrew Bible
+
+    DESCRIPTION
+        biblecli is a tool for reading and researching the Bible in its original
+        languages and modern translations. It supports:
+        - Greek New Testament (Nestle 1904)
+        - Hebrew Masoretic Text (BHSA - Biblia Hebraica Stuttgartensia)
+        - Septuagint (LXX - Rahlfs 1935)
+        - French Traduction Œcumenique de la Bible (TOB)
+        - Bible de Jérusalem (BJ)
+        - New Arabic Version (NAV)
+        - English Berean Interlinear Bible
+
+        It features smart lazy-loading of datasets, verse-level cross-references,
+        and a personal notebook for saving connections between texts.
+
+    COMMANDS
+        list books
+               List all available books in the N1904 dataset.
+
+        add -c [COLLECTION] -s [SOURCE] -t [TARGET] --type [TYPE] -n [NOTE]
+               Add a new cross-reference/note to a personal collection.
+               
+               Arguments:
+               -c, --collection: Collection name (e.g., 'notes'). 
+                                 Automatically saved as data/references_nt_[name].json 
+                                 or data/references_ot_[name].json based on source book.
+               -s, --source:     Source verse (e.g., 'Mc 1:1')
+               -t, --target:     Target verse or reference note (e.g., 'Lc 1:1')
+               --type:           Relation type (parallel, allusion, quotation, other). 
+                                 Default: 'other'
+               -n, --note:       Text content of the note
+
+        search [QUERY] (Coming soon)
+               Search for specific terms in the texts.
+
+    SHORTCUTS
+        tob [REFERENCE]
+               Equivalent to `biblecli [REFERENCE] -b tob`. 
+               Focuses on the French TOB translation. Use -f to view notes.
+
+        bj [REFERENCE]
+               Equivalent to `biblecli [REFERENCE] -b bj`.
+               Focuses on the French BJ translation.
+
+    REFERENCES
+        Flexible reference parsing supports English and French abbreviations:
+        - Single verse:  "Jn 1:1", "Jean 1:1", "Gen 1:1"
+        - Verse range:   "Mt 5:1-10"
+        - Whole chapter: "Mk 4"
+        - Book aliases:  "Gn" = "Gen" = "Genesis", "Mt" = "Matt", etc.: both French and English abbreviations supported.
+
+    DATA SOURCES
+        N1904 (Greek NT)
+               Nestle 1904 Greek New Testament. Structure based on Tischendorf.
+               Source: github.com/CenterBLC/N1904
+
+        LXX (Greek OT)
+               Septuaginta (Rahlfs 1935).
+               Source: github.com/CenterBLC/LXX
+
+        BHSA (Hebrew OT)
+               Biblia Hebraica Stuttgartensia Amstellodamensis.
+               Source: github.com/ETCBC/bhsa
+
+        TOB (French)
+               Traduction Œcumenique de la Bible.
+               Note: Requires manual setup due to copyright. See ADD_SOURCES.md.
+
+        BJ (French)
+               Bible de Jérusalem.
+               Note: Requires manual setup (EPUB conversion). See ADD_SOURCES.md.
+
+        NAV (Arabic)
+               New Arabic Version (Ketab El Hayat).
+               Note: Requires manual setup (XML conversion). See ADD_SOURCES.md.
+
+        OpenBible
+               Cross-reference data provided by OpenBible.info,a modernized, evolution of the classic Treasury of Scripture Knowledge (TSK)
+
+    EXAMPLES
+        biblecli "Jn 3:16" -t en fr gr
+               Show John 3:16 in English, French, and Greek.
+
+        biblecli "Gn 1:1" --tr hb gr
+               Show Genesis 1:1 in Hebrew and Greek Septuagint.
+
+        tob "Mc 1:1" -f
+               Show Mark 1:1 in French with TOB notes and parallels.
+
+        biblecli list books
+               Show all supported book names.
+
+        biblecli "Gen 1:1" --tr ar
+               Show Genesis 1:1 in Arabic (NAV).
     """
     # If a subcommand (like search) is called, 'reference' might be None, and strictly likely should be ignored here
     # But Typer callback runs BEFORE command.
@@ -513,10 +607,39 @@ def main(
             presenter.present_cross_references(refs_model, ref_texts=ref_texts, formatter=format_ref)
 
 
-# Search command removed to ensure Single Command App behavior for legacy compatibility
-# @app.command()
-# def search(query: str): ...
-
+def add_cli(
+    collection: Annotated[str, typer.Option("--collection", "-c", help="Collection name (e.g., 'notes').")],
+    source: Annotated[str, typer.Option("--source", "-s", help="Source verse (e.g., 'Mc 1:1')")],
+    target: Annotated[str, typer.Option("--target", "-t", help="Target verse or reference note (e.g., 'Lc 1:1')")],
+    rel_type: Annotated[str, typer.Option("--type", help="Relation type (parallel, allusion, quotation, other). Default: 'other'")] = "other",
+    note: Annotated[str, typer.Option("--note", "-n", help="Text content of the note")] = ""
+):
+    """
+    Add a new cross-reference/note to a personal collection.
+    """
+    try:
+        adapter = AdapterFactory.get()
+        # AdapterFactory calculates data_dir internally, but we can access it via adapter instance
+        data_dir = adapter.data_dir
+        normalizer = adapter.normalizer
+        
+        db = ReferenceDatabase(data_dir, normalizer)
+        success = db.add_relation(collection, source, target, rel_type, note)
+        
+        if success:
+             typer.secho(f"Successfully added reference to collection '{collection}'", fg=typer.colors.GREEN)
+        else:
+             typer.secho("Failed to add reference.", fg=typer.colors.RED)
+             raise typer.Exit(code=1)
+             
+    except Exception as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
 
 if __name__ == "__main__":
-    app()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "add":
+        sys.argv.pop(1) # Remove "add" command so typer sees the rest as args/options
+        typer.run(add_cli)
+    else:
+        app()
