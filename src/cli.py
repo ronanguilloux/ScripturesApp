@@ -554,24 +554,60 @@ def main(
                          
                          # Determine version for lookup
                          is_target_nt = norm.is_nt(tb)
-                         # Determine version for lookup
+                         # FIXED: Multi-lingual Cross References
+                         # 1. Determine active languages/versions to fetch for this target
+                         # We want to match the "feel" of the main verse display.
+                         # If user asked for specific translations, use those.
+                         # If default, use default set (Greek + Hebrew + French).
+                         
+                         versions_to_fetch_for_ref = []
+                         
                          is_target_nt = norm.is_nt(tb)
                          
-                         # FIXED: Prioritize French (TOB/BJ) for cross-references by default
-                         # unless explicitly overridden or unavailable.
-                         target_v = (french_version or "tob").upper()
-                         
-                         # Fallback logic if needed (though TOB/BJ covers full bible usually)
-                         # If explicitly requested Greek/Hebrew via other means, we might want to respect it,
-                         # but for now satisfing the requirement "stick to french by default".
+                         if translations:
+                             # Explicit languages requested
+                             for t in translations:
+                                 t = t.lower()
+                                 v_code = None
+                                 if t == 'en': v_code = 'N1904_EN'
+                                 elif t == 'fr': v_code = (french_version or "tob").upper()
+                                 elif t == 'gr': v_code = 'N1904' if is_target_nt else 'LXX'
+                                 elif t == 'hb': v_code = 'BHSA'
+                                 elif t == 'ar': v_code = 'NAV'
+                                 # Direct version codes
+                                 elif t in ['tob', 'bj', 'nav', 'lxx', 'bhsa', 'n1904']: v_code = t.upper()
+                                 
+                                 # Validate OT/NT availability (e.g. BHSA only OT)
+                                 if v_code == 'BHSA' and is_target_nt: continue
+                                 if v_code == 'N1904' and not is_target_nt: v_code = 'LXX' # Fallback for GR
+                                 if v_code == 'LXX' and is_target_nt: v_code = 'N1904' # Fallback
+                                 
+                                 if v_code and v_code not in versions_to_fetch_for_ref:
+                                     versions_to_fetch_for_ref.append(v_code)
+                         else:
+                             # Default Behavior: Greek + Hebrew (OT) + French
+                             # 1. Greek
+                             versions_to_fetch_for_ref.append('N1904' if is_target_nt else 'LXX')
+                             
+                             # 2. Hebrew (OT only)
+                             if not is_target_nt:
+                                 versions_to_fetch_for_ref.append('BHSA')
+                                 
+                             # 3. French
+                             versions_to_fetch_for_ref.append((french_version or "tob").upper())
 
-                         # Helper to fetch
-                         try:
-                             v_obj = adapter.get_verse(tb, tc, tv, version=target_v)
-                             if v_obj:
-                                 ref_texts[target] = v_obj.text
-                         except: 
-                             pass
+                         # Helper to fetch and join
+                         texts_list = []
+                         for v_code in versions_to_fetch_for_ref:
+                             try:
+                                 v_obj = adapter.get_verse(tb, tc, tv, version=v_code)
+                                 if v_obj and v_obj.text:
+                                     texts_list.append(v_obj.text)
+                             except:
+                                 pass
+                         
+                         if texts_list:
+                             ref_texts[target] = "\n       ".join(texts_list)
 
             # Formatter Helper
             def format_ref(target_str):
