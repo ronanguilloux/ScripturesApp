@@ -10,21 +10,24 @@ Example: Display a verse with
 - plus the French TOB:
 
 ```sh
-biblecli "Gn 1:1-3" --tr gr hb fr -k
+biblecli "Gn 1:1-3" --tr fr gr hb ar -k
 ```
 
 Output:
 ```
-Genèse 1:1-3
-v1. בְּ רֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַ שָּׁמַ֖יִם וְ אֵ֥ת הָ אָֽרֶץ
-    ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν 
-    Commencement de la création par Dieu du ciel et de la terre.
-v2. וְ הָ אָ֗רֶץ הָיְתָ֥ה תֹ֨הוּ֙ וָ בֹ֔הוּ וְ חֹ֖שֶׁךְ עַל פְּנֵ֣י תְהֹ֑ום וְ ר֣וּחַ אֱלֹהִ֔ים מְרַחֶ֖פֶת עַל פְּנֵ֥י הַ מָּֽיִם
-    ἡ δὲ γῆ ἦν ἀόρατος καὶ ἀκατασκεύαστος καὶ σκότος ἐπάνω τῆς ἀβύσσου καὶ πνεῦμα θεοῦ ἐπεφέρετο ἐπάνω τοῦ ὕδατος 
-    La terre était déserte et vide, et la ténèbre à la surface de l'abîme ; le souffle de Dieu planait à la surface des eaux,
-v3. וַ יֹּ֥אמֶר אֱלֹהִ֖ים יְהִ֣י אֹ֑ור וַֽ יְהִי אֹֽור
-    καὶ εἶπεν ὁ θεός γενηθήτω φῶς καὶ ἐγένετο φῶς 
-    et Dieu dit : « Que la lumière soit ! » Et la lumière fut.
+Gn 1:1-3
+v1. Au commencement, Dieu créa le ciel et la terre.
+ἐν ἀρχῇ ἐποίησεν ὁ θεὸς τὸν οὐρανὸν καὶ τὴν γῆν 
+בְּ רֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַ שָּׁמַ֖יִם וְ אֵ֥ת הָ אָֽרֶץ
+فِي الْبَدْءِ خَلَقَ اللهُ السَّمَاوَاتِ وَالأَرْضَ،
+v2. La terre était déserte et vide, et la ténèbre à la surface de l'abîme; le souffle de Dieu planait à la surface des eaux,
+ἡ δὲ γῆ ἦν ἀόρατος καὶ ἀκατασκεύαστος καὶ σκότος ἐπάνω τῆς ἀβύσσου καὶ πνεῦμα θεοῦ ἐπεφέρετο ἐπάνω τοῦ ὕδατος 
+וְ הָ אָ֗רֶץ הָיְתָ֥ה תֹ֨הוּ֙ וָ בֹ֔הוּ וְ חֹ֖שֶׁךְ עַל פְּנֵ֣י תְהֹ֑ום וְ ר֣וּחַ אֱלֹהִ֔ים מְרַחֶ֖פֶת עַל פְּנֵ֥י הַ מָּֽיִם
+وَإِذْ كَانَتِ الأَرْضُ مُشَوَّشَةً وَمُقْفِرَةً وَتَكْتَنِفُ الظُّلْمَةُ وَجْهَ الْمِيَاهِ، وَإِذْ كَانَ رُوحُ اللهِ يُرَفْرِفُ عَلَى سَطْحِ الْمِيَاهِ،
+v3. et Dieu dit: «Que la lumière soit!» Et la lumière fut.
+καὶ εἶπεν ὁ θεός γενηθήτω φῶς καὶ ἐγένετο φῶς 
+וַ יֹּ֥אמֶר אֱלֹהִ֖ים יְהִ֣י אֹ֑ור וַֽ יְהִי אֹֽור
+أَمَرَ اللهُ: «لِيَكُنْ نُورٌ». فَصَارَ نُورٌ،
 ```
 
 # Installation
@@ -108,7 +111,7 @@ biblecli "Mt 5:1-10"
 
 Display an entire chapter:
 ```sh
-biblecli "Mt 5"
+biblecli "Mc 5"
 ```
 
 List all available books:
@@ -277,8 +280,8 @@ Indeed the datasets are loaded in the following order:
 The lazy loading logic consists in loading the minimal number of datasets based on the reference:
 
 - Query `Mc 1:1` without flags -> Loads `N1904` and `TOB`. Skips `BHSA`.
-- Query `Mc 1:1 --tr fr` -> Loads `N1904` and `TOB`. Skips `BHSA`.
-- Query `Mc 1:1 --tr en` -> Loads `N1904` only. Skips `TOB` and `BHSA`.
+- Query `Mc 1:1 --tr fr` -> Loads `TOB` only. Skips `N1904` and `BHSA`.
+- Query `Mc 1:1 --tr en` -> Loads `N1904` (for English glosses) only. Skips `TOB` and `BHSA`.
 - Query `Mc 1:1 --tr en fr` -> Loads `N1904` and `TOB`. Skips `BHSA`.
 
 ### Key Achievements
@@ -286,8 +289,8 @@ The lazy loading logic consists in loading the minimal number of datasets based 
 **Smart Defaults**: `tob "Gn 1:1"` now automatically displays Hebrew, Greek (LXX), and French. `tob "Mc 1:1"` displays Greek (N1904) and French, effectively skipping the Hebrew load.
 
 **Selective Loading**:
-*   **NT Queries**: `N1904` + `TOB` are loaded. `BHSA` and `LXX` are skipped.
-*   **OT Queries**: `LXX` + `BHSA` + `TOB` are loaded. `N1904` is skipped.
+*   **NT Queries**: `N1904` + `TOB` are loaded by default. `BHSA` and `LXX` are skipped. `biblecli "Mc 1:1" --tr fr` loads **only** TOB.
+*   **OT Queries**: `LXX` + `BHSA` + `TOB` are loaded by default. `N1904` is skipped. `biblecli "Gn 1:1" --tr fr` loads **only** TOB.
 
 **Performance Improvement (User CPU)**:
 *   `Mc 1:1`: **~3.4s** (Baseline including TOB load).
@@ -302,8 +305,8 @@ Measured using reference: **Mc 1:1**
 
 | Command | Time | Notes |
 | :--- | :--- | :--- |
-| `tob "Mc 1:1"` (Default) | **~3.3s** | Baseline (Python startup + N1904 + TOB) |
-| `tob "Mc 1:1" --tr fr` | **~3.3s** | Minimal overhead (Skips BHSA) |
+| `tob "Mc 1:1" (Default)` | **~3.3s** | Baseline (Python startup + N1904 + TOB) |
+| `tob "Mc 1:1" --tr fr` | **~3.3s** | Optimized (Loads TOB only) |
 | `tob "Mc 1:1" --tr gr` | **~3.0s** | Minimal overhead (Skips BHSA & TOB) |
 
 ### Old Testament (OT)
@@ -312,7 +315,7 @@ Measured using reference: **Gn 1:1**
 | Command | Time | Notes |
 | :--- | :--- | :--- |
 | `tob "Gn 1:1"` (Default) | **~3.5s** | Balanced load (LXX + BHSA + TOB) |
-| `tob "Gn 1:1" --tr fr` | **~1.0s** | Fast French lookup (Loads TOB only if cached) |
+| `tob "Gn 1:1" --tr fr` | **~1.0s** | Fast French lookup (Loads TOB only) |
 | `tob "Gn 1:1" --tr hb` | **~3.2s** | Loads BHSA |
 | `tob "Gn 1:1" --tr en fr gr hb` | **~6.5s** | Full load (System overhead) |
 

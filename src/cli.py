@@ -478,7 +478,8 @@ def main(
         if not s_filter and french_version:
              # If no explicit source filter, use -b/--french as hint if it looks like a source?
              # Legacy logic: "Smart default: if no -s provided, but -b provided, use -b as source hint"
-             s_filter = french_version
+             if french_version.lower() == 'tob':
+                 s_filter = french_version
 
         # Determine Scope
         scope = 'all'
@@ -553,16 +554,16 @@ def main(
                          
                          # Determine version for lookup
                          is_target_nt = norm.is_nt(tb)
-                         target_v = primary_v
-                         if target_v == "N1904" and not is_target_nt: target_v = "LXX"
-                         if target_v == "BHSA" and is_target_nt: target_v = "N1904"
-                         if target_v == "TOB" or target_v == "BJ":
-                              # Keep French if requested as primary? 
-                              # Legacy usually showed text in Default (LXX/BHSA/N1904)??
-                              # Step 176 of Legacy printer output showed French text?
-                              # "Quand vous venez..." (French).
-                              # So if Primary is French (TOB default), crossrefs are French.
-                              pass
+                         # Determine version for lookup
+                         is_target_nt = norm.is_nt(tb)
+                         
+                         # FIXED: Prioritize French (TOB/BJ) for cross-references by default
+                         # unless explicitly overridden or unavailable.
+                         target_v = (french_version or "tob").upper()
+                         
+                         # Fallback logic if needed (though TOB/BJ covers full bible usually)
+                         # If explicitly requested Greek/Hebrew via other means, we might want to respect it,
+                         # but for now satisfing the requirement "stick to french by default".
 
                          # Helper to fetch
                          try:
@@ -597,8 +598,23 @@ def main(
                      return None, None, None
 
                  if "-" in target_str:
-                      pass # Simplified for now, just return raw if range complex
-                 
+                     parts_range = target_str.split("-")
+                     if len(parts_range) == 2:
+                         start_parsed = parse_one(parts_range[0])
+                         end_parsed = parse_one(parts_range[1])
+                         
+                         if start_parsed[0] and end_parsed[0]:
+                             sb, sc, sv = start_parsed
+                             eb, ec, ev = end_parsed
+                             
+                             if sb == eb:
+                                 if sc == ec:
+                                     return f"{sb} {sc}:{sv}-{ev}"
+                                 else:
+                                     return f"{sb} {sc}:{sv}-{ec}:{ev}"
+                             else:
+                                 return f"{sb} {sc}:{sv}-{eb} {ec}:{ev}"
+                  
                  abbr, ch, vs = parse_one(target_str)
                  if abbr:
                       return f"{abbr} {ch}:{vs}"
