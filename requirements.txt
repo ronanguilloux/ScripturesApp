@@ -1,2 +1,4 @@
 text-fabric[github]==12.3.7
 pytest
+typer
+pydantic

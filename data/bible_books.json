@@ -138,7 +138,9 @@
             "fr": {
                 "label": "1 Samuel",
                 "abbreviations": [
-                    "1 S"
+                    "1 S",
+                    "1 Sa",
+                    "1 Sam"
                 ],
                 "bj": "Premier livre de Samuel"
             }
@@ -154,7 +156,9 @@
             "fr": {
                 "label": "2 Samuel",
                 "abbreviations": [
-                    "2 S"
+                    "2 S",
+                    "2 Sa",
+                    "2 Sam"
                 ],
                 "bj": "Deuxième livre de Samuel"
             }
@@ -171,7 +175,8 @@
             "fr": {
                 "label": "1 Rois",
                 "abbreviations": [
-                    "1 R"
+                    "1 R",
+                    "1 Roi"
                 ],
                 "bj": "Premier livre des Rois"
             }
@@ -189,7 +194,8 @@
             "fr": {
                 "label": "2 Rois",
                 "abbreviations": [
-                    "2 R"
+                    "2 R",
+                    "2 Roi"
                 ],
                 "bj": "Deuxième livre des Rois"
             }
@@ -1028,32 +1034,109 @@
             }
         },
         "TOB": {
-            "en": { "label": "Tobit", "abbreviations": ["Tob"] },
-            "fr": { "label": "Tobie", "abbreviations": ["Tb"], "bj": "Tobie" }
+            "en": {
+                "label": "Tobit",
+                "abbreviations": [
+                    "Tob"
+                ]
+            },
+            "fr": {
+                "label": "Tobie",
+                "abbreviations": [
+                    "Tb"
+                ],
+                "bj": "Tobie"
+            }
         },
         "JDT": {
-            "en": { "label": "Judith", "abbreviations": ["Jdt"] },
-            "fr": { "label": "Judith", "abbreviations": ["Jdt"], "bj": "Judith" }
+            "en": {
+                "label": "Judith",
+                "abbreviations": [
+                    "Jdt"
+                ]
+            },
+            "fr": {
+                "label": "Judith",
+                "abbreviations": [
+                    "Jdt"
+                ],
+                "bj": "Judith"
+            }
         },
         "1MA": {
-            "en": { "label": "1 Maccabees", "abbreviations": ["1 Macc"] },
-            "fr": { "label": "1 Macchabées", "abbreviations": ["1 M"], "bj": "Premier livre des Maccabées" }
+            "en": {
+                "label": "1 Maccabees",
+                "abbreviations": [
+                    "1 Macc"
+                ]
+            },
+            "fr": {
+                "label": "1 Macchabées",
+                "abbreviations": [
+                    "1 M"
+                ],
+                "bj": "Premier livre des Maccabées"
+            }
         },
         "2MA": {
-            "en": { "label": "2 Maccabees", "abbreviations": ["2 Macc"] },
-            "fr": { "label": "2 Macchabées", "abbreviations": ["2 M"], "bj": "Deuxième livre des Maccabées" }
+            "en": {
+                "label": "2 Maccabees",
+                "abbreviations": [
+                    "2 Macc"
+                ]
+            },
+            "fr": {
+                "label": "2 Macchabées",
+                "abbreviations": [
+                    "2 M"
+                ],
+                "bj": "Deuxième livre des Maccabées"
+            }
         },
         "WIS": {
-            "en": { "label": "Wisdom", "abbreviations": ["Wis"] },
-            "fr": { "label": "Sagesse", "abbreviations": ["Sg"], "bj": "Sagesse de Salomon" }
+            "en": {
+                "label": "Wisdom",
+                "abbreviations": [
+                    "Wis"
+                ]
+            },
+            "fr": {
+                "label": "Sagesse",
+                "abbreviations": [
+                    "Sg"
+                ],
+                "bj": "Sagesse de Salomon"
+            }
         },
         "SIR": {
-            "en": { "label": "Sirach", "abbreviations": ["Sir"] },
-            "fr": { "label": "Ecclésiastique", "abbreviations": ["Si"], "bj": "L'Ecclésiastique" }
+            "en": {
+                "label": "Sirach",
+                "abbreviations": [
+                    "Sir"
+                ]
+            },
+            "fr": {
+                "label": "Ecclésiastique",
+                "abbreviations": [
+                    "Si"
+                ],
+                "bj": "L'Ecclésiastique"
+            }
         },
         "BAR": {
-            "en": { "label": "Baruch", "abbreviations": ["Bar"] },
-            "fr": { "label": "Baruch", "abbreviations": ["Ba"], "bj": "Baruch" }
+            "en": {
+                "label": "Baruch",
+                "abbreviations": [
+                    "Bar"
+                ]
+            },
+            "fr": {
+                "label": "Baruch",
+                "abbreviations": [
+                    "Ba"
+                ],
+                "bj": "Baruch"
+            }
         }
     }
 }

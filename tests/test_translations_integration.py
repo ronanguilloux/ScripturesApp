@@ -1,6 +1,11 @@
-import subprocess
-import os
 import pytest
+import sys
+import os
+import subprocess
+from unittest.mock import MagicMock
+
+# Mark all tests in this file as integration
+pytestmark = pytest.mark.integration
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

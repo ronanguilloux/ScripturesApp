@@ -23,6 +23,9 @@ class BookNormalizer:
             'MAT', 'MRK', 'LUK', 'JHN', 'ACT', 'ROM', '1CO', '2CO', 'GAL', 'EPH', 'PHP', 'COL', '1TH', '2TH', '1TI', '2TI', 'TIT',
             'PHM', 'HEB', 'JAS', '1PE', '2PE', '1JN', '2JN', '3JN', 'JUD', 'REV'
         }
+        self.APOCRYPHA_BOOKS = {
+            'TOB', 'JDT', 'ESG', 'WIS', 'SIR', 'BAR', 'LJE', 'S3Y', 'SUS', 'BEL', '1MA', '2MA', '3MA', '4MA', '1ES', '2ES', 'MAN', 'PS2'
+        }
         
         self._load_mappings()
 
@@ -31,6 +34,9 @@ class BookNormalizer:
 
     def is_nt(self, book_code):
         return book_code in self.NT_BOOKS
+
+    def is_apocrypha(self, book_code):
+        return book_code in self.APOCRYPHA_BOOKS
 
     def _load_mappings(self):
         path = os.path.join(self.data_dir, "bible_books.json")
