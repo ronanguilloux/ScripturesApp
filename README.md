@@ -67,7 +67,7 @@ When you run the tool for the first time with an internet connection, it will au
         └── bhsa/tf/[version]/    # Hebrew Masoretic Text
 ```
 
-### 2. French TOB, Bible de Jerusalme, and Ketab al-Nabi translations (Manual Setup, personal copy required)
+### 2. French TOB, Bible de Jerusalem, and Ketab al-Nabi translations (Manual Setup, personal copy required)
 
 The [ADD_SOURCES.md](ADD_SOURCES.md) file contains all technical instructions to add the TOB French text and how to 
 1. Respect copyright and licensing restrictions, acquiring online an EPUB copy of these editions.
@@ -182,7 +182,7 @@ Vous laissez de côté le commandement de Dieu et vous vous attachez à la tradi
             en revenant du marché, ils ne mangent pas sans avoir fait des ablutions; et il y a beaucoup d'autres pratiques traditionnelles auxquelles ils sont attachés: lavages rituels des coupes, des cruches et des plats.
 ```
 
-Filter cross-references by source (e.g., only TOB notes):
+Filter cross-references by source (e.g., only TOB notes). By default, references from all available sources are aggregated.
 ```sh
 biblecli "Mk 1:1" -f -s tob
 ```

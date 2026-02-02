@@ -65,7 +65,7 @@ def main(
     french_version: Annotated[Optional[str], typer.Option("--bible", "-b", help="French version (tob, bj)")] = None,
     show_crossrefs: Annotated[bool, typer.Option("--crossref", "-c", help="Show cross references")] = False,
     crossref_full: Annotated[bool, typer.Option("--crossref-full", "-f", help="Display cross-references with text")] = False,
-    crossref_source: Annotated[Optional[str], typer.Option("--crossref-source", "-s", help="Filter cross-references by source")] = None,
+    crossref_source: Annotated[Optional[str], typer.Option("--crossref-source", "-s", help="Filter cross-references by source (default: aggregate all)")] = None,
     compact: Annotated[bool, typer.Option("--compact", "-k", help="Compact display (vX. Text)")] = False,
     very_compact: Annotated[bool, typer.Option("--very-compact", "-K", help="Very compact display (Text only)")] = False,
     extra_args: Annotated[Optional[List[str]], typer.Argument(help="Extra translation arguments for compatibility")] = None,
