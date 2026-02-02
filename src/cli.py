@@ -514,6 +514,19 @@ def main(
                  notes=refs_dict.get("notes", []),
                  relations=relations
              )
+             
+             # SORTING LOGIC: Order relations by biblical book order
+             def sort_key(rel):
+                 parsed = norm.normalize_reference(rel.target_ref)
+                 if parsed:
+                      bk, ch, vs, _ = parsed
+                      order = norm.book_order.get(bk, 999)
+                      return (0, order, ch, vs)
+                 else:
+                      # If unparseable, put at end, sorted by string
+                      return (1, rel.target_ref)
+             
+             refs_model.relations.sort(key=sort_key)
         
         if refs_model:
             # If full text requested, fetch target verses
