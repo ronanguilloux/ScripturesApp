@@ -47,6 +47,7 @@ class CrossReferenceRelation(BaseModel):
     target_ref: str 
     rel_type: CrossReferenceType
     note: Optional[str] = None
+    text: Optional[str] = None
     
     model_config = ConfigDict(frozen=True)
 
@@ -56,3 +57,18 @@ class VerseCrossReferences(BaseModel):
     
     # VerseCrossReferences holds lists, so it cannot be strictly frozen without Tuple conversion.
     # Keeping it mutable for ease of construction.
+
+class VerseItem(BaseModel):
+    ref: str
+    primary: Verse
+    parallels: List[Verse] = Field(default_factory=list)
+    
+    model_config = ConfigDict(frozen=True)
+
+class VerseResponse(BaseModel):
+    reference: str
+    verses: List[VerseItem] # Structured verse data
+    cross_references: Optional[VerseCrossReferences] = None
+    
+    model_config = ConfigDict(frozen=True)
+
