@@ -266,6 +266,17 @@ Then run:
 pytest
 ```
 
+## API Integration (macOS App)
+
+This project exposes a JSON API to serve native applications.
+
+-   **Specification**: [OpenAPI (JSON)](docs/openapi.json)
+-   **Run Server**:
+    ```bash
+    uvicorn src.api.main:app
+    ```
+-   **Endpoint**: `GET /api/v1/search`
+
 ## Lazy Loading Logic
 
 We have implemented the smart OT/NT lazy loading and default behaviors.

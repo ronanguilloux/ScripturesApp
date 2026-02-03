@@ -1,0 +1,398 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BibleCLI API",
+    "description": "Backend for BibleCLI Native App",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "summary": "Search Verses",
+        "operationId": "search_verses_api_v1_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Bible reference (e.g. 'Gn 1:1')",
+              "title": "Q"
+            },
+            "description": "Bible reference (e.g. 'Gn 1:1')"
+          },
+          {
+            "name": "tr",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Translations to show (en, fr, gr, hb, ar)",
+              "title": "Tr"
+            },
+            "description": "Translations to show (en, fr, gr, hb, ar)"
+          },
+          {
+            "name": "v",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Primary version (N1904, LXX, BHSA)",
+              "default": "N1904",
+              "title": "V"
+            },
+            "description": "Primary version (N1904, LXX, BHSA)"
+          },
+          {
+            "name": "bible",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "French version (tob, bj)",
+              "title": "Bible"
+            },
+            "description": "French version (tob, bj)"
+          },
+          {
+            "name": "crossref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Show cross references",
+              "default": false,
+              "title": "Crossref"
+            },
+            "description": "Show cross references"
+          },
+          {
+            "name": "crossref_full",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Display cross-references with text",
+              "default": false,
+              "title": "Crossref Full"
+            },
+            "description": "Display cross-references with text"
+          },
+          {
+            "name": "crossref_source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter cross-references by source",
+              "title": "Crossref Source"
+            },
+            "description": "Filter cross-references by source"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CrossReferenceRelation": {
+        "properties": {
+          "target_ref": {
+            "type": "string",
+            "title": "Target Ref"
+          },
+          "rel_type": {
+            "$ref": "#/components/schemas/CrossReferenceType"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_ref",
+          "rel_type"
+        ],
+        "title": "CrossReferenceRelation"
+      },
+      "CrossReferenceType": {
+        "type": "string",
+        "enum": [
+          "parallel",
+          "quotation",
+          "allusion",
+          "other"
+        ],
+        "title": "CrossReferenceType"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Language": {
+        "type": "string",
+        "enum": [
+          "en",
+          "fr",
+          "gr",
+          "hb",
+          "ar"
+        ],
+        "title": "Language"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Verse": {
+        "properties": {
+          "book_code": {
+            "type": "string",
+            "title": "Book Code"
+          },
+          "chapter": {
+            "type": "integer",
+            "title": "Chapter"
+          },
+          "verse": {
+            "type": "integer",
+            "title": "Verse"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "node": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "book_code",
+          "chapter",
+          "verse",
+          "text",
+          "language",
+          "version"
+        ],
+        "title": "Verse"
+      },
+      "VerseCrossReferences": {
+        "properties": {
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "relations": {
+            "items": {
+              "$ref": "#/components/schemas/CrossReferenceRelation"
+            },
+            "type": "array",
+            "title": "Relations"
+          }
+        },
+        "type": "object",
+        "title": "VerseCrossReferences"
+      },
+      "VerseItem": {
+        "properties": {
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "primary": {
+            "$ref": "#/components/schemas/Verse"
+          },
+          "parallels": {
+            "items": {
+              "$ref": "#/components/schemas/Verse"
+            },
+            "type": "array",
+            "title": "Parallels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "primary"
+        ],
+        "title": "VerseItem"
+      },
+      "VerseResponse": {
+        "properties": {
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "verses": {
+            "items": {
+              "$ref": "#/components/schemas/VerseItem"
+            },
+            "type": "array",
+            "title": "Verses"
+          },
+          "cross_references": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerseCrossReferences"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "reference",
+          "verses"
+        ],
+        "title": "VerseResponse"
+      }
+    }
+  }
+}
