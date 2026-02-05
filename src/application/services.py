@@ -56,6 +56,47 @@ class BibleService:
         self.data_dir = self.adapter.data_dir
         self.ref_db = ReferenceDatabase(self.data_dir, self.normalizer)
 
+    def _localize_ref(self, target_str: str) -> str:
+        if not target_str: return ""
+        
+        def parse_one(ref):
+            parts = ref.split(".")
+            if len(parts) >= 3:
+                bk, ch, vs = parts[0], parts[1], parts[2]
+                n1904 = self.normalizer.code_to_n1904.get(bk, bk)
+                tob_name = self.normalizer.n1904_to_tob.get(n1904, bk)
+                return tob_name, ch, vs
+            return None, None, None
+
+        if "-" in target_str:
+            parts_range = target_str.split("-")
+            if len(parts_range) == 2:
+                start_parsed = parse_one(parts_range[0])
+                end_parsed = parse_one(parts_range[1])
+                
+                if start_parsed[0] and end_parsed[0]:
+                    sb, sc, sv = start_parsed
+                    eb, ec, ev = end_parsed
+                    if sb == eb:
+                        if sc == ec: return f"{sb} {sc}:{sv}-{ev}"
+                        else: return f"{sb} {sc}:{sv}-{ec}:{ev}"
+                    else: return f"{sb} {sc}:{sv}-{eb} {ec}:{ev}"
+        
+        abbr, ch, vs = parse_one(target_str)
+        if abbr:
+             return f"{abbr} {ch}:{vs}"
+        
+        # Fallback for space separated logic if needed, or return original
+        if " " in target_str:
+             parts = target_str.split(" ", 1)
+             code = parts[0]
+             rest = parts[1]
+             n1904 = self.normalizer.code_to_n1904.get(code, code)
+             tob = self.normalizer.n1904_to_tob.get(n1904)
+             if tob: return f"{tob} {rest}"
+             
+        return target_str
+
     def search(
         self, 
         reference: str, 
@@ -211,8 +252,33 @@ class BibleService:
                      except:
                          pass
                  
-                 # Import locally to avoid circular dep if any (though models is leaf)
-                 # Actually better to import at top.
+                 # Determine localized book name (Logic ported from CLI)
+                 header_name = None
+                 is_french = False
+                 if current_translations:
+                     if 'fr' in [t.lower() for t in current_translations]: is_french = True
+                 else:
+                     is_french = True # Default
+                 
+                 code = item_primary.book_code
+                 if is_french:
+                     n1904_name = self.normalizer.code_to_n1904.get(code, code)
+                     tob_name = self.normalizer.n1904_to_tob.get(n1904_name)
+                     if tob_name: header_name = tob_name
+                 
+                 if not header_name:
+                     # English fallback if requested or default
+                     is_english = False
+                     if current_translations and 'en' in [t.lower() for t in current_translations]: is_english = True
+                     if item_primary.version == "N1904_EN": is_english = True
+                     
+                     if is_english:
+                         en_name = self.normalizer.code_to_n1904.get(code, code)
+                         if en_name: header_name = en_name.replace("_", " ")
+
+                 # Attach name to primary
+                 # We need to recreate the Verse object since it's frozen
+                 item_primary = item_primary.model_copy(update={"book_name": header_name})
                  
                  verses_data.append(VerseItem(
                      ref=f"{b} {c}:{v}",
@@ -233,8 +299,9 @@ class BibleService:
         c_refs_model = None
         if (show_crossrefs or crossref_full) and verse != 0:
              s_filter = crossref_source
-             if not s_filter and french_version and french_version.lower() == 'tob':
-                 s_filter = 'tob'
+             
+             # Logic removed: We should NOT auto-filter to 'tob' just because french_version is 'tob'
+             # unless explicitly requested. This restores visibility of generic cross-refs.
                  
              scope = 'nt' if is_nt else 'ot'
              
@@ -247,8 +314,12 @@ class BibleService:
              if refs_dict:
                  relations = []
                  for r in refs_dict.get("relations", []):
+                     t_ref = r["target"]
+                     t_ref_loc = self._localize_ref(t_ref)
+
                      relations.append(CrossReferenceRelation(
-                       target_ref=r["target"],
+                       target_ref=t_ref,
+                       target_ref_localized=t_ref_loc,
                        rel_type=r["type"],
                        note=r.get("note")
                      ))
@@ -376,22 +447,6 @@ class BibleService:
 
                              texts_acc = []
                              
-                             # Strategy: For range, we want [Verse 3 Text] [Verse 4 Text] joined?
-                             # Or [Version 1 Text for 3-4] [Version 2 Text for 3-4]?
-                             # Legacy: "Text v3... Text v4..." usually?
-                             # Actually legacy usually fetched just one verse for cross ref?
-                             # Wait, user said "Mc 7:3-4 cross reference is mentioned but its text is not cited".
-                             # Means it was missing entirely.
-                             # If I fetch multiple verses, I should probably join them with space?
-                             
-                             # Let's fetch all text for the range in the PRIMARY preferred version?
-                             # Or ALL versions?
-                             # Legacy behavior for cross refs: usually just one version (the main one or defaults).
-                             # "versions_to_try" list suggests multiple versions.
-                             # If multiple versions AND multiple verses:
-                             # Output: (Version1 v3 v4) \n (Version2 v3 v4) ?
-                             # Simplify: Concatenate verses for each version, then join versions.
-                             
                              for v_code in versions_to_try:
                                  v_texts = []
                                  for (b, c, v) in verses_to_fetch_list:
@@ -409,6 +464,7 @@ class BibleService:
                          # Update relation with text
                          new_relations.append(CrossReferenceRelation(
                              target_ref=rel.target_ref,
+                             target_ref_localized=rel.target_ref_localized, # Must preserve this!
                              rel_type=rel.rel_type,
                              note=rel.note,
                              text=text_content

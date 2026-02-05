@@ -31,6 +31,7 @@ class Verse(VerseRef):
     text: str
     language: Language
     version: str # e.g. "N1904", "TOB", "LXX"
+    book_name: Optional[str] = None
     node: Optional[int] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
     
@@ -45,6 +46,7 @@ class CrossReferenceType(str, Enum):
 
 class CrossReferenceRelation(BaseModel):
     target_ref: str 
+    target_ref_localized: Optional[str] = None
     rel_type: CrossReferenceType
     note: Optional[str] = None
     text: Optional[str] = None
