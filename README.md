@@ -277,6 +277,47 @@ This project exposes a JSON API to serve native applications.
     ```
 -   **Endpoint**: `GET /api/v1/search`
 
+# macOS Native App
+
+This project now includes a **native utility for macOS** that lives in your menu bar.
+
+It provides a Search Bar to quickly lookup verses without opening a terminal, and copies results to clipboard.
+
+## Features
+- **Menu Bar Access**: Always available via a "Fish" icon 🐟.
+- **Search**: Type references (e.g. `Mc 7:8`) directly.
+- **Language Toggles**: Request French (TOB/BJ), Greek (LXX/N1904), Hebrew (BHSA), English (Berean), Arabic (NAV) (See [ADD_SOURCES.md](ADD_SOURCES.md) for details).
+- **Cross-References**: Toggle displaying cross-references (`-c`) and full text (`-f`).
+- **Clipboard**: One-click copy for verses or cross-references.
+- **Auto-Server**: The app manages the Python backend automatically.
+
+## Requirements
+- macOS 12.0 (Monterey) or later.
+- Swift 5.9+ (installed via Xcode or Command Line Tools).
+- Python 3.8+ (for the backend).
+
+## Build & Run
+
+To run the app in debug mode (which also starts the local API server):
+
+```bash
+cd macos
+swift run
+```
+
+The app will appear in your menu bar.
+
+## Distribution
+
+To build a release binary:
+
+```bash
+cd macos
+swift build -c release
+```
+
+The binary will be located in `.build/release/BibleApp`.
+
 ## Lazy Loading Logic
 
 We have implemented the smart OT/NT lazy loading and default behaviors.
