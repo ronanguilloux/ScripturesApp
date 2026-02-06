@@ -3,8 +3,21 @@ import Foundation
 class ServerManager: ObservableObject {
     static let shared = ServerManager()
     
-    // Hardcoded path for development environment
-    private let projectRoot = "/Users/ronan/Documents/Gemini/antigravity/biblecli"
+    // Keys for UserDefaults
+    private let kServerPath = "BibleCLI_ServerPath"
+    
+    // Default fallback path (optional, or empty)
+    private let defaultPath = "/Users/ronan/Documents/Gemini/antigravity/biblecli"
+    
+    var serverPath: String {
+        get {
+            UserDefaults.standard.string(forKey: kServerPath) ?? defaultPath
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: kServerPath)
+        }
+    }
+
     private var serverProcess: Process?
     
     func startServer() {
@@ -13,12 +26,20 @@ class ServerManager: ObservableObject {
             return
         }
         
+        let path = serverPath
+        var isDir: ObjCBool = false
+        if !FileManager.default.fileExists(atPath: path, isDirectory: &isDir) || !isDir.boolValue {
+            print("Invalid server path: \(path)")
+            return
+        }
+        
         let task = Process()
-        task.currentDirectoryPath = projectRoot
+        task.currentDirectoryPath = path
         task.executableURL = URL(fileURLWithPath: "/bin/zsh")
         
         // Command to start uvicorn
         // We use -c to run the full command string
+        // Check if .venv exists, otherwise might need another way or assume standard layout
         let command = ".venv/bin/uvicorn api.main:app --app-dir src --port 8000"
         task.arguments = ["-c", command]
         
@@ -38,7 +59,7 @@ class ServerManager: ObservableObject {
         do {
             try task.run()
             self.serverProcess = task
-            print("Server started manually.")
+            print("Server started manually from: \(path)")
         } catch {
             print("Failed to start server: \(error)")
         }

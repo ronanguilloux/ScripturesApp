@@ -20,6 +20,8 @@ struct ContentView: View {
     @State private var showCrossRefs = false
     @State private var showFullCrossRefs = false
     @State private var displayMode: DisplayMode = .classic
+    @State private var showSettings = false // For Settings Sheet
+
     
     // Focus management
     @FocusState private var isFocused: Bool
@@ -236,7 +238,19 @@ struct ContentView: View {
             
             // Footer with Quit Button
             HStack {
+                Button(action: {
+                    showSettings = true
+                }) {
+                    Image(systemName: "gearshape")
+                }
+                .controlSize(.small)
+                .help("Settings")
+                .sheet(isPresented: $showSettings) {
+                    SettingsView()
+                }
+                
                 Spacer()
+                
                 Button("Quit") {
                     ServerManager.shared.stopServer()
                     NSApplication.shared.terminate(nil)
