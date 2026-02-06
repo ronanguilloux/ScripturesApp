@@ -23,166 +23,117 @@ struct ContentView: View {
     @State private var showSettings = false // For Settings Sheet
 
     
+    @AppStorage("windowWidth") private var windowWidth: Double = 400
+    @AppStorage("windowHeight") private var windowHeight: Double = 600
+    @State private var dragStartSize: CGSize?
+
     // Focus management
     @FocusState private var isFocused: Bool
     
     var body: some View {
-        VStack(spacing: 0) {
-            // MARK: - Options Bar
-            VStack(alignment: .leading, spacing: 10) {
-                // Languages
-                HStack {
-                    Text("Lang:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    HStack(spacing: 2) {
-                        Toggle("FR", isOn: binding(for: "fr"))
-                        // French Version Selector (Only if FR matches)
-                        if selectedLanguages.contains("fr") {
-                            Picker("", selection: $frenchVersion) {
-                                Text("TOB").tag("tob")
-                                Text("BJ").tag("bj")
+        ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: 0) {
+                // MARK: - Options Bar
+                VStack(alignment: .leading, spacing: 10) {
+                    // Languages
+                    HStack {
+                        Text("Lang:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        HStack(spacing: 2) {
+                            Toggle("FR", isOn: binding(for: "fr"))
+                            // French Version Selector (Only if FR matches)
+                            if selectedLanguages.contains("fr") {
+                                Picker("", selection: $frenchVersion) {
+                                    Text("TOB").tag("tob")
+                                    Text("BJ").tag("bj")
+                                }
+                                .pickerStyle(.menu)
+                                .controlSize(.mini)
+                                .frame(width: 60)
+                                .onChange(of: frenchVersion) { _ in performSearch() }
                             }
-                            .pickerStyle(.menu)
-                            .controlSize(.mini)
-                            .frame(width: 60)
-                            .onChange(of: frenchVersion) { _ in performSearch() }
                         }
-                    }
-                    Toggle("GR", isOn: binding(for: "gr"))
-                    Toggle("EN", isOn: binding(for: "en"))
-                    Toggle("AR", isOn: binding(for: "ar"))
-                    Toggle("HB", isOn: binding(for: "hb"))
-                }
-                .toggleStyle(.button)
-                .controlSize(.mini)
-                .onChange(of: selectedLanguages) { _ in performSearch() }
-                
-                HStack {
-                    // Display Mode
-                    Picker("", selection: $displayMode) {
-                        ForEach(DisplayMode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .controlSize(.mini)
-                    .frame(width: 150)
-                    
-                    Spacer()
-                    
-                    // Cross Refs
-                    Toggle(isOn: $showCrossRefs) {
-                        Image(systemName: "link")
+                        Toggle("GR", isOn: binding(for: "gr"))
+                        Toggle("EN", isOn: binding(for: "en"))
+                        Toggle("AR", isOn: binding(for: "ar"))
+                        Toggle("HB", isOn: binding(for: "hb"))
                     }
                     .toggleStyle(.button)
                     .controlSize(.mini)
-                    .help("Show Cross-References (-c)")
-                    .onChange(of: showCrossRefs) { _ in performSearch() }
+                    .onChange(of: selectedLanguages) { _ in performSearch() }
                     
-                    if showCrossRefs {
-                        Toggle(isOn: $showFullCrossRefs) {
-                            Image(systemName: "text.alignleft")
+                    HStack {
+                        // Display Mode
+                        Picker("", selection: $displayMode) {
+                            ForEach(DisplayMode.allCases) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .controlSize(.mini)
+                        .frame(width: 150)
+                        
+                        Spacer()
+                        
+                        // Cross Refs
+                        Toggle(isOn: $showCrossRefs) {
+                            Image(systemName: "link")
                         }
                         .toggleStyle(.button)
                         .controlSize(.mini)
-                        .help("Show Full Text (-f)")
-                        .onChange(of: showFullCrossRefs) { _ in performSearch() }
+                        .help("Show Cross-References (-c)")
+                        .onChange(of: showCrossRefs) { _ in performSearch() }
+                        
+                        if showCrossRefs {
+                            Toggle(isOn: $showFullCrossRefs) {
+                                Image(systemName: "text.alignleft")
+                            }
+                            .toggleStyle(.button)
+                            .controlSize(.mini)
+                            .help("Show Full Text (-f)")
+                            .onChange(of: showFullCrossRefs) { _ in performSearch() }
+                        }
                     }
                 }
-            }
-            .padding(10)
-            .background(Color(NSColor.controlBackgroundColor))
-            
-            Divider()
+                .padding(10)
+                .background(Color(NSColor.controlBackgroundColor))
+                
+                Divider()
 
-            // Search Bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.gray)
-                TextField("Search (e.g. Mc 7:8)", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(.title2)
-                    .focused($isFocused)
-                    .onSubmit {
-                        performSearch()
+                // Search Bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    TextField("Search (e.g. Mc 7:8)", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(.title2)
+                        .focused($isFocused)
+                        .onSubmit {
+                            performSearch()
+                        }
+                    if isLoading {
+                        ProgressView()
+                            .scaleEffect(0.5)
                     }
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.5)
                 }
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            
-            Divider()
-            
-            // Results OR Prompt
-            ScrollView {
-                if let response = verseResponse {
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Main Verses Header
-                        HStack {
-                            Text("Verses")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Button(action: {
-                                copyVerses(response)
-                            }) {
-                                Image(systemName: "doc.on.doc")
-                                Text("Copy")
-                            }
-                            .controlSize(.small)
-                        }
-                        
-                        ForEach(response.verses) { item in
-                            VStack(alignment: .leading, spacing: 4) {
-                                // Header (Classic & Compact Only)
-                                if displayMode != .textOnly {
-                                    if displayMode == .compact {
-                                         // vX.
-                                         Text("v\(item.primary.verse).")
-                                            .font(.headline)
-                                            .foregroundColor(.green)
-                                    } else {
-                                         // Classic: Book Chapter:Verse
-                                         Text("\(item.primary.bookName ?? item.primary.book) \(item.primary.chapter):\(item.primary.verse)")
-                                            .font(.headline)
-                                            .foregroundColor(.green)
-                                    }
-                                }
-                                
-                                // Primary Text
-                                Text(item.primary.text)
-                                    .font(.body)
-                                    .textSelection(.enabled)
-                                
-                                // Parallels (Not in text-only mode strictly? CLI says Text Only is "Text only". 
-                                // But usually means hiding header metadata. 
-                                // Let's show parallels but without their own headers if logical.)
-                                ForEach(item.parallels, id: \.version) { p in
-                                    Text(p.text)
-                                        .font(.body)
-                                        .foregroundColor(.secondary)
-                                        .textSelection(.enabled)
-                                }
-                            }
-                            .padding(.bottom, 8)
-                        }
-                        
-                        Divider()
-                        
-                        // Cross References
-                        if let refs = response.crossReferences, !refs.relations.isEmpty {
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                
+                Divider()
+                
+                // Results OR Prompt
+                ScrollView {
+                    if let response = verseResponse {
+                        VStack(alignment: .leading, spacing: 20) {
+                            // Main Verses Header
                             HStack {
-                                Text("Cross References")
-                                    .font(.subheadline)
-                                    .bold()
+                                Text("Verses")
+                                    .font(.headline)
                                     .foregroundColor(.secondary)
                                 Spacer()
                                 Button(action: {
-                                    copyCrossRefs(refs)
+                                    copyVerses(response)
                                 }) {
                                     Image(systemName: "doc.on.doc")
                                     Text("Copy")
@@ -190,78 +141,156 @@ struct ContentView: View {
                                 .controlSize(.small)
                             }
                             
-                            ForEach(refs.relations) { rel in
+                            ForEach(response.verses) { item in
                                 VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        // Indentation style from CLI
-                                        Text("    \(rel.targetRefLocalized ?? rel.targetRef)")
-                                            .font(.caption)
-                                            .bold()
-                                        Spacer()
+                                    // Header (Classic & Compact Only)
+                                    if displayMode != .textOnly {
+                                        if displayMode == .compact {
+                                             // vX.
+                                             Text("v\(item.primary.verse).")
+                                                .font(.headline)
+                                                .foregroundColor(.green)
+                                        } else {
+                                             // Classic: Book Chapter:Verse
+                                             Text("\(item.primary.bookName ?? item.primary.book) \(item.primary.chapter):\(item.primary.verse)")
+                                                .font(.headline)
+                                                .foregroundColor(.green)
+                                        }
                                     }
-                                    if let text = rel.text {
-                                        Text(text)
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                            .padding(.leading, 20) // Indent text
-                                            .lineLimit(nil)
+                                    
+                                    // Primary Text
+                                    Text(item.primary.text)
+                                        .font(.body)
+                                        .textSelection(.enabled)
+                                    
+                                    // Parallels (Not in text-only mode strictly? CLI says Text Only is "Text only". 
+                                    // But usually means hiding header metadata. 
+                                    // Let's show parallels but without their own headers if logical.)
+                                    ForEach(item.parallels, id: \.version) { p in
+                                        Text(p.text)
+                                            .font(.body)
+                                            .foregroundColor(.secondary)
+                                            .textSelection(.enabled)
                                     }
                                 }
-                                .padding(.vertical, 2)
+                                .padding(.bottom, 8)
+                            }
+                            
+                            Divider()
+                            
+                            // Cross References
+                            if let refs = response.crossReferences, !refs.relations.isEmpty {
+                                HStack {
+                                    Text("Cross References")
+                                        .font(.subheadline)
+                                        .bold()
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Button(action: {
+                                        copyCrossRefs(refs)
+                                    }) {
+                                        Image(systemName: "doc.on.doc")
+                                        Text("Copy")
+                                    }
+                                    .controlSize(.small)
+                                }
+                                
+                                ForEach(refs.relations) { rel in
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            // Indentation style from CLI
+                                            Text("    \(rel.targetRefLocalized ?? rel.targetRef)")
+                                                .font(.caption)
+                                                .bold()
+                                            Spacer()
+                                        }
+                                        if let text = rel.text {
+                                            Text(text)
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                                .padding(.leading, 20) // Indent text
+                                                .lineLimit(nil)
+                                        }
+                                    }
+                                    .padding(.vertical, 2)
+                                }
                             }
                         }
-                    }
-                    .padding()
-                } else if let error = errorMessage {
-                    VStack(spacing: 8) {
-                        Text(error)
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                        
-                        Button("Start Server") {
-                            ServerManager.shared.startServer()
-                            // Retry after delay?
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                performSearch()
+                        .padding()
+                    } else if let error = errorMessage {
+                        VStack(spacing: 8) {
+                            Text(error)
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.center)
+                                .padding()
+                            
+                            Button("Start Server") {
+                                ServerManager.shared.startServer()
+                                // Retry after delay?
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                    performSearch()
+                                }
                             }
                         }
+                    } else {
+                        Text("Type a reference to search")
+                            .foregroundColor(.secondary)
+                            .padding(.top, 40)
                     }
-                } else {
-                    Text("Type a reference to search")
-                        .foregroundColor(.secondary)
-                        .padding(.top, 40)
-                }
-            }
-            
-            Divider()
-            
-            // Footer with Quit Button
-            HStack {
-                Button(action: {
-                    showSettings = true
-                }) {
-                    Image(systemName: "gearshape")
-                }
-                .controlSize(.small)
-                .help("Settings")
-                .sheet(isPresented: $showSettings) {
-                    SettingsView()
                 }
                 
-                Spacer()
+                Divider()
                 
-                Button("Quit") {
-                    ServerManager.shared.stopServer()
-                    NSApplication.shared.terminate(nil)
+                // Footer with Quit Button
+                HStack {
+                    Button(action: {
+                        showSettings = true
+                    }) {
+                        Image(systemName: "gearshape")
+                    }
+                    .controlSize(.small)
+                    .help("Settings")
+                    .sheet(isPresented: $showSettings) {
+                        SettingsView()
+                    }
+                    
+                    Spacer()
+                    
+                    Button("Quit") {
+                        ServerManager.shared.stopServer()
+                        NSApplication.shared.terminate(nil)
+                    }
+                    .keyboardShortcut("q")
+                    .controlSize(.small)
                 }
-                .keyboardShortcut("q")
-                .controlSize(.small)
+                .padding(8)
+                .background(Color(NSColor.controlBackgroundColor))
             }
-            .padding(8)
-            .background(Color(NSColor.controlBackgroundColor))
+            .frame(width: windowWidth, height: windowHeight)
+            
+            // Resize Handle
+            Image(systemName: "arrow.down.forward")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.secondary.opacity(0.5))
+                .frame(width: 20, height: 20)
+                .contentShape(Rectangle())
+                .padding(2) // Bottom right padding
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            if dragStartSize == nil {
+                                dragStartSize = CGSize(width: windowWidth, height: windowHeight)
+                            }
+                            guard let start = dragStartSize else { return }
+                            
+                            windowWidth = max(320, start.width + value.translation.width)
+                            windowHeight = max(300, start.height + value.translation.height)
+                        }
+                        .onEnded { _ in
+                            dragStartSize = nil
+                        }
+                )
         }
-        .frame(width: 400, height: 600) // Increased height for options
         .onAppear {
             isFocused = true
         }

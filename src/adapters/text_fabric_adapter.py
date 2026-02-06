@@ -511,11 +511,18 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
                  node = app.nodeFromSectionStr(ref_str)
              except: pass
              
-             if not node or app.api.F.otype.v(node) != 'chapter':
+             if not node or not isinstance(node, int) or app.api.F.otype.v(node) != 'chapter':
+                  # Invalid previous attempt, reset node
+                  node = None
+                  
                   name_en = self.normalizer.code_to_n1904.get(book_code)
                   if name_en:
                        try:
-                           node = app.nodeFromSectionStr(f"{name_en} {chapter}")
+                           n = app.nodeFromSectionStr(f"{name_en} {chapter}")
+                           if n and isinstance(n, int):
+                               # Only assign if int, and check otype
+                               if app.api.F.otype.v(n) == 'chapter':
+                                   node = n
                        except: pass
 
         if not node:

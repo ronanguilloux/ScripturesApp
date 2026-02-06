@@ -26,7 +26,7 @@ class MenuBarManager: NSObject, NSPopoverDelegate {
     
     private func setupPopover() {
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 400, height: 600)
+        // popover.contentSize = NSSize(width: 400, height: 600) // Let SwiftUI View dictate size
         popover.behavior = .transient // Closes on click outside (mostly)
         
         // Inject ContentView

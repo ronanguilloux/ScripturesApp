@@ -141,6 +141,35 @@ class BibleService:
                         else:
                              # Case B: detailed end? "7:9"?
                              pass
+                    else:
+                        # Whole chapter start "Gn 1" -> End must be "2" or "1:5" (but usually "Gn 1-2" means Ch 1 to Ch 2)
+                        if end_s.isdigit():
+                             c_e = int(end_s)
+                             # Iterate Chapters
+                             if c_e >= c_s:
+                                 for c in range(c_s, c_e + 1):
+                                     # Fetch verses for this chapter (Need Primary Version! But we don't know it yet)
+                                     # We need to defer fetching, OR fetching just list of verses 
+                                     # We can't fetch text here easily because we haven't selected version.
+                                     # But we can assume standard versification or use normalizer/adapter helper to get verse count?
+                                     # Adapter has `get_chapter` which returns objects.
+                                     # Using 'N1904' or 'LXX' or 'BHSA' as temp to find available verses.
+                                     # We'll use a safe default to discover verses.
+                                     
+                                     temp_v = 'N1904' if self.normalizer.is_nt(b_s) else 'BHSA'
+                                     # Fallback if BHSA not avail? Use adapter defaults? 
+                                     # Actually `get_chapter` takes version.
+                                     
+                                     objs = self.adapter.get_chapter(b_s, c, temp_v)
+                                     if not objs and not self.normalizer.is_nt(b_s):
+                                         objs = self.adapter.get_chapter(b_s, c, 'LXX') # Fallback
+                                         
+                                     if objs:
+                                         for v_obj in objs:
+                                             target_verses.append((b_s, c, v_obj.verse))
+                                             
+                                 parsed_range = True
+                                 book_code, chapter, verse = b_s, c_s, 0
 
         if not parsed_range:
              norm_ref = self.adapter.normalize_reference(reference)
