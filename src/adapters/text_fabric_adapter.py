@@ -227,7 +227,7 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
             text_list.append(trans or "")
             
         return Verse(
-            book_code=book_code,
+            book_code=book_name, # Use full English name
             chapter=chapter,
             verse=verse,
             text=" ".join(text_list),
@@ -235,6 +235,159 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
             version="N1904_EN",
             node=node
         )
+        
+    # ... (skipping _get_lxx_verse etc) ...
+
+    def _get_nav_verse(self, book_code: str, chapter: int, verse: int) -> Optional[Verse]:
+        api = self.nav_api # Need property
+        if not self._nav_api and self._nav_provider:
+             self._nav_api = self._nav_provider()
+        if not self._nav_api: return None
+        api = self._nav_api
+        
+        # NAV uses English Names "Genesis" etc, but prefers "1 Samuel" over "I Samuel"
+        # Try code_to_bhsa (e.g. 1_Samuel)
+        name_en = self.normalizer.code_to_bhsa.get(book_code)
+        if not name_en: 
+             name_en = self.normalizer.code_to_n1904.get(book_code)
+             
+        if not name_en: return None
+        
+        node = api.T.nodeFromSection((name_en, str(chapter), str(verse)))
+        if not node:
+             # Try replacing underscore with space (e.g. "1_Samuel" -> "1 Samuel")
+             node = api.T.nodeFromSection((name_en.replace("_", " "), str(chapter), str(verse)))
+             
+        if not node:
+             # Fallback to N1904 name if BHSA failed (e.g. maybe some books differ)
+             name_alt = self.normalizer.code_to_n1904.get(book_code)
+             if name_alt and name_alt != name_en:
+                  node = api.T.nodeFromSection((name_alt, str(chapter), str(verse)))
+                  if not node:
+                       node = api.T.nodeFromSection((name_alt.replace("_", " "), str(chapter), str(verse)))
+        
+        if not node or not isinstance(node, int): return None
+        
+        text = api.T.text(node)
+        
+        # Determine strict display name
+        display_name = name_en.replace("_", " ") if name_en else book_code
+        
+        return Verse(
+             book_code=display_name,
+             chapter=chapter,
+             verse=verse,
+             text=text,
+             language=Language.ARABIC,
+             version="NAV",
+             node=node
+        )
+
+    # ... (get_chapter dispatch) ...
+
+    def _get_n1904_english_chapter(self, book_code: str, chapter: int) -> List[Verse]:
+        app = self.n1904
+        if not app: return []
+        
+        if not self.normalizer.is_nt(book_code): return []
+        book_name = self.normalizer.code_to_n1904.get(book_code)
+        if not book_name: return []
+        
+        api = app.api
+        node = api.T.nodeFromSection((book_name, chapter))
+        
+        if node and api.F.otype.v(node) == 'chapter':
+             pass 
+        else:
+             book_node = api.T.nodeFromSection((book_name,))
+             if not book_node: return []
+             
+             node = None
+             for ch_node in api.L.d(book_node, otype='chapter'):
+                 if api.F.chapter.v(ch_node) == int(chapter):
+                     node = ch_node
+                     break
+        
+        if not node: return []
+        
+        verses = []
+        for v_node in api.L.d(node, otype='verse'):
+            v_num = api.F.verse.v(v_node)
+            
+            # English Gloss extraction
+            text_list = []
+            words = api.L.d(v_node, otype='word')
+            for w in words:
+                trans = ""
+                if hasattr(api.F, 'trans'):
+                    trans = api.F.trans.v(w)
+                if not trans and hasattr(api.F, 'gloss'):
+                    trans = api.F.gloss.v(w)
+                text_list.append(trans or "")
+            
+            verses.append(Verse(
+                book_code=book_name, # Use full Name
+                chapter=chapter,
+                verse=v_num,
+                text=" ".join(text_list),
+                language=Language.ENGLISH,
+                version="N1904_EN",
+                node=v_node
+            ))
+        return verses
+
+    # ... (skip other methods) ...
+    
+    def _get_nav_chapter(self, book_code: str, chapter: int) -> List[Verse]:
+        api = self.nav_api
+        if not api: return []
+        
+        # Try code_to_bhsa (e.g. 1_Samuel)
+        name_en = self.normalizer.code_to_bhsa.get(book_code)
+        if not name_en: 
+             name_en = self.normalizer.code_to_n1904.get(book_code)
+        
+        if not name_en: return []
+        
+        node = api.T.nodeFromSection((name_en, str(chapter)))
+        if not node:
+               node = api.T.nodeFromSection((name_en.replace("_", " "), str(chapter)))
+        
+        if not node:
+             # Fallback to N1904
+             name_alt = self.normalizer.code_to_n1904.get(book_code)
+             if name_alt and name_alt != name_en:
+                  node = api.T.nodeFromSection((name_alt, str(chapter)))
+                  if not node:
+                       node = api.T.nodeFromSection((name_alt.replace("_", " "), str(chapter)))
+        
+        if not node or api.F.otype.v(node) != 'chapter':
+             return []
+             
+        verses = []
+        display_name = name_en.replace("_", " ") if name_en else book_code
+        
+        for v_node in api.L.d(node, otype='verse'):
+             if hasattr(api.F, 'verse'):
+                 v_val = api.F.verse.v(v_node)
+             else:
+                 v_val = api.T.sectionFromNode(v_node)[2]
+             try:
+                 v_num = int(v_val)
+             except:
+                 continue
+                 
+             text = api.T.text(v_node)
+             verses.append(Verse(
+                book_code=display_name,
+                chapter=chapter,
+                verse=v_num,
+                text=text,
+                language=Language.ARABIC,
+                version="NAV",
+                node=v_node
+             ))
+        return verses
 
     def _get_lxx_verse(self, book_code: str, chapter: int, verse: int) -> Optional[Verse]:
         app = self.lxx
@@ -433,8 +586,10 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
         
         text = api.T.text(node)
         
+        display_name = name_en.replace("_", " ") if name_en else book_code
+        
         return Verse(
-             book_code=book_code,
+             book_code=display_name,
              chapter=chapter,
              verse=verse,
              text=text,
@@ -447,6 +602,8 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
         version = version.upper()
         if version == "N1904":
             return self._get_n1904_chapter(book_code, chapter)
+        elif version == "N1904_EN":
+            return self._get_n1904_english_chapter(book_code, chapter)
         elif version == "LXX":
             return self._get_lxx_chapter(book_code, chapter)
         elif version == "BHSA":
@@ -495,6 +652,57 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
                 text=text,
                 language=Language.GREEK,
                 version="N1904",
+                node=v_node
+            ))
+        return verses
+
+    def _get_n1904_english_chapter(self, book_code: str, chapter: int) -> List[Verse]:
+        app = self.n1904
+        if not app: return []
+        
+        if not self.normalizer.is_nt(book_code): return []
+        book_name = self.normalizer.code_to_n1904.get(book_code)
+        if not book_name: return []
+        
+        api = app.api
+        node = api.T.nodeFromSection((book_name, chapter))
+        
+        if node and api.F.otype.v(node) == 'chapter':
+             pass 
+        else:
+             book_node = api.T.nodeFromSection((book_name,))
+             if not book_node: return []
+             
+             node = None
+             for ch_node in api.L.d(book_node, otype='chapter'):
+                 if api.F.chapter.v(ch_node) == int(chapter):
+                     node = ch_node
+                     break
+        
+        if not node: return []
+        
+        verses = []
+        for v_node in api.L.d(node, otype='verse'):
+            v_num = api.F.verse.v(v_node)
+            
+            # English Gloss extraction
+            text_list = []
+            words = api.L.d(v_node, otype='word')
+            for w in words:
+                trans = ""
+                if hasattr(api.F, 'trans'):
+                    trans = api.F.trans.v(w)
+                if not trans and hasattr(api.F, 'gloss'):
+                    trans = api.F.gloss.v(w)
+                text_list.append(trans or "")
+            
+            verses.append(Verse(
+                book_code=book_name, # Use full Name
+                chapter=chapter,
+                verse=v_num,
+                text=" ".join(text_list),
+                language=Language.ENGLISH,
+                version="N1904_EN",
                 node=v_node
             ))
         return verses
@@ -615,8 +823,13 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
              return []
              
         verses = []
+        display_name = name_en.replace("_", " ") if name_en else book_code
+        
         for v_node in api.L.d(node, otype='verse'):
-             v_val = api.F.verse.v(v_node)
+             if hasattr(api.F, 'verse'):
+                 v_val = api.F.verse.v(v_node)
+             else:
+                 v_val = api.T.sectionFromNode(v_node)[2]
              try:
                  v_num = int(v_val)
              except:
@@ -624,7 +837,7 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
                  
              text = api.T.text(v_node)
              verses.append(Verse(
-                book_code=book_code,
+                book_code=display_name,
                 chapter=chapter,
                 verse=v_num,
                 text=text,

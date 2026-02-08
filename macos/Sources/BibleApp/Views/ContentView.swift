@@ -58,6 +58,19 @@ struct ContentView: View {
                         Toggle("EN", isOn: binding(for: "en"))
                         Toggle("AR", isOn: binding(for: "ar"))
                         Toggle("HB", isOn: binding(for: "hb"))
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            ServerManager.shared.stopServer()
+                            NSApplication.shared.terminate(nil)
+                        }) {
+                            Image(systemName: "power")
+                        }
+                        .help("Quit")
+                        .keyboardShortcut("q")
+                        .controlSize(.small)
+                        // .buttonStyle(.borderless)
                     }
                     .toggleStyle(.button)
                     .controlSize(.mini)
@@ -241,7 +254,7 @@ struct ContentView: View {
                 
                 Divider()
                 
-                // Footer with Quit Button
+                // Footer
                 HStack {
                     Button(action: {
                         showSettings = true
@@ -255,13 +268,6 @@ struct ContentView: View {
                     }
                     
                     Spacer()
-                    
-                    Button("Quit") {
-                        ServerManager.shared.stopServer()
-                        NSApplication.shared.terminate(nil)
-                    }
-                    .keyboardShortcut("q")
-                    .controlSize(.small)
                 }
                 .padding(8)
                 .background(Color(NSColor.controlBackgroundColor))
