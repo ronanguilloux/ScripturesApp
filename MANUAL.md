@@ -3,7 +3,8 @@
  Usage: cli.py [OPTIONS] [REFERENCE]               
  [EXTRA_ARGS]...                                   
                                                    
- BibleCLI - Command-line interface for the Greek   
+# ScripturesApp User Manual
+ine interface for the Greek   
  New Testament & Hebrew Bible                      
                                                    
  DESCRIPTION                                       

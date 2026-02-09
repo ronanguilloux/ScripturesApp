@@ -4,7 +4,7 @@ class ServerManager: ObservableObject {
     static let shared = ServerManager()
     
     // Keys for UserDefaults
-    private let kServerPath = "BibleCLI_ServerPath"
+    private let kServerPath = "ScripturesApp_ServerPath"
     
     // Default fallback path (optional, or empty)
     private let defaultPath = "/Users/ronan/Documents/Gemini/antigravity/biblecli"

@@ -23,4 +23,4 @@ else
 fi
 
 # Run the main script with all passed arguments
-python3 $BIBLE_DIR/src/cli.py "$@"
+"$VENV_DIR/bin/python3" $BIBLE_DIR/src/cli.py "$@"

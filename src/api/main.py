@@ -15,8 +15,8 @@ from application.services import BibleService
 from domain.models import VerseResponse
 
 app = FastAPI(
-    title="BibleCLI API",
-    description="Backend for BibleCLI Native App",
+    title="ScripturesApp API",
+    description="Backend for ScripturesApp Native App",
     version="1.0.0"
 )
 

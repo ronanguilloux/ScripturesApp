@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("BibleCLI_ServerPath") private var serverPath: String = "/Users/ronan/Documents/Gemini/antigravity/biblecli"
+    @AppStorage("ScripturesApp_ServerPath") private var serverPath: String = "/Users/ronan/Documents/Gemini/antigravity/biblecli"
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -10,7 +10,7 @@ struct SettingsView: View {
                 .font(.headline)
             
             VStack(alignment: .leading) {
-                Text("BibleCLI Project Path:")
+                Text("ScripturesApp Project Path:")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 

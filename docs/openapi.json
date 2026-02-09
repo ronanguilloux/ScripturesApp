@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "BibleCLI API",
+    "title": "ScripturesApp API",
     "description": "Backend for BibleCLI Native App",
     "version": "1.0.0"
   },

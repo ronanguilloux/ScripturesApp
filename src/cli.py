@@ -7,7 +7,7 @@ from presenter import VersePresenter
 from book_normalizer import BookNormalizer
 from references_db import ReferenceDatabase
 
-app = typer.Typer(help="BibleCLI - Modern Python Bible Reader", context_settings={"help_option_names": ["-h", "--help"]})
+app = typer.Typer(help="ScripturesApp - Modern Python Bible Reader", context_settings={"help_option_names": ["-h", "--help"]})
 
 class AdapterFactory:
     _adapter = None
@@ -61,10 +61,10 @@ def main(
     extra_args: Annotated[Optional[List[str]], typer.Argument(help="Extra translation arguments for compatibility")] = None,
 ):
     """
-    BibleCLI - Command-line interface for the Greek New Testament & Hebrew Bible
+    ScripturesApp - Command-line interface for the Greek New Testament & Hebrew Bible
     
     DESCRIPTION
-        biblecli is a tool for reading and researching the Bible in its original
+        scripturesapp (biblecli) is a tool for reading and researching the Bible in its original
         languages and modern translations. It supports:
         - Greek New Testament (Nestle 1904)
         - Hebrew Masoretic Text (BHSA - Biblia Hebraica Stuttgartensia)

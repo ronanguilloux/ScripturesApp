@@ -1,4 +1,4 @@
-# Bible CLI Tool
+# ScripturesApp Tool
 
 A command-line interface for reading verses in Greek (N1904 or LXX), Hebrew (BHSA), English (Berean Interlinear Bible), French (TOB or BJ) and Arabic (Ketab al-Nabi).
 
@@ -22,7 +22,7 @@ v1. Au commencement, Dieu créa le ciel et la terre.
 فِي الْبَدْءِ خَلَقَ اللهُ السَّمَاوَاتِ وَالأَرْضَ،
 v2. La terre était déserte et vide, et la ténèbre à la surface de l'abîme; le souffle de Dieu planait à la surface des eaux,
 ἡ δὲ γῆ ἦν ἀόρατος καὶ ἀκατασκεύαστος καὶ σκότος ἐπάνω τῆς ἀβύσσου καὶ πνεῦμα θεοῦ ἐπεφέρετο ἐπάνω τοῦ ὕδατος 
-וְ הָ אָ֗רֶץ הָיְתָ֥ה תֹ֨הוּ֙ וָ בֹ֔הוּ וְ חֹ֖שֶׁךְ עַל פְּנֵ֣י תְהֹ֑ום וְ ר֣וּחַ אֱלֹהִ֔ים מְרַחֶ֖פֶת עַל פְּנֵ֥י הַ מָּֽיִם
+וְ הָ אָ֗רֶץ הָיְתָ֥ה תֹ֨הוּ֙ וָ בֹ֔הוּ וְ חֹ֖שֶׁךְ עַל פְּנֵ֣י תְהֹ֑ום וְ ר֣וּחַ אֱלֹהִ֔ים מְרַחֶ֖פֶת עַל פְּנֵ֥י הַ מָּֽיִם
 وَإِذْ كَانَتِ الأَرْضُ مُشَوَّشَةً وَمُقْفِرَةً وَتَكْتَنِفُ الظُّلْمَةُ وَجْهَ الْمِيَاهِ، وَإِذْ كَانَ رُوحُ اللهِ يُرَفْرِفُ عَلَى سَطْحِ الْمِيَاهِ،
 v3. et Dieu dit: «Que la lumière soit!» Et la lumière fut.
 καὶ εἶπεν ὁ θεός γενηθήτω φῶς καὶ ἐγένετο φῶς 
@@ -33,8 +33,8 @@ v3. et Dieu dit: «Que la lumière soit!» Et la lumière fut.
 # Installation
 
 ```sh
-git clone git@github.com:ronanguilloux/biblecli.git
-cd biblecli
+git clone https://github.com/yourusername/ScripturesApp.git
+cd ScripturesApp
 make install
 bin/biblecli "Mk 1:1" # A simple query to test the installation
 ```
