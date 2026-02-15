@@ -15,10 +15,11 @@ setup: clean
 install: setup
 	$(PYTHON) -m pip install --upgrade pip
 	$(PIP) install -r requirements.txt
+	@echo "Running tests..."
 	@$(MAKE) test
 
 test:
-	pytest
+	PYTHONPATH=. $(VENV_DIR)/bin/pytest
 
 clean:
 	rm -rf $(VENV_DIR)

@@ -4,14 +4,29 @@ class ServerManager: ObservableObject {
     static let shared = ServerManager()
     
     // Keys for UserDefaults
+    // Keys for Settings
     private let kServerPath = "ScripturesApp_ServerPath"
     
-    // Default fallback path (optional, or empty)
-    private let defaultPath = "/Users/ronan/Documents/Gemini/antigravity/biblecli"
+    // Dynamic determination of project root
+    private var defaultPath: String {
+        let current = FileManager.default.currentDirectoryPath
+        // If running from 'macos' subdir (e.g. swift run)
+        if current.hasSuffix("/macos") {
+            let parent = URL(fileURLWithPath: current).deletingLastPathComponent().path
+            return parent
+        }
+        return current
+    }
     
     var serverPath: String {
         get {
-            UserDefaults.standard.string(forKey: kServerPath) ?? defaultPath
+            // Priority:
+            // 1. User setting (if valid)
+            // 2. Dynamic default
+            if let saved = UserDefaults.standard.string(forKey: kServerPath), !saved.isEmpty {
+                 return saved
+            }
+            return defaultPath
         }
         set {
             UserDefaults.standard.set(newValue, forKey: kServerPath)

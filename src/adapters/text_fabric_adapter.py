@@ -598,6 +598,117 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
              node=node
         )
 
+    def find_lemma(self, lemma: str) -> List[Verse]:
+        """
+        Find all verses containing a specific Greek lemma in the N1904 dataset.
+        Counts matches using NFC normalization to handle accent variations (Oxia vs Tonos).
+        """
+        app = self.n1904
+        if not app: return []
+        api = app.api
+        F, L = api.F, api.L
+        
+        import unicodedata
+        
+        # Normalize input
+        target = unicodedata.normalize('NFC', lemma)
+        
+        verse_nodes = set()
+        
+        # Linear scan for exact lemma match
+        # Optimized: pre-normalize or normalize on fly?
+        # 140k words. normalize on fly is fine for CLI command (approx 0.2s overhead).
+        
+        for w in F.otype.s('word'):
+            l_raw = F.lemma.v(w)
+            # Check Lemma
+            if l_raw and unicodedata.normalize('NFC', l_raw) == target:
+                v_list = L.u(w, otype='verse')
+                if v_list:
+                    verse_nodes.add(v_list[0])
+                continue
+
+            # Check Surface Text (e.g. "Τεκνία" -> "Τεκνία")
+            # T.text(w) usually includes trailing space/punctuation.
+            # Convert to NFC and strip for comparison.
+            t_raw = api.T.text(w)
+            if t_raw:
+                 # Remove punctuation if exact match fails?
+                 # Often "Word " or "Word,"
+                 # Let's strip whitespace and common punctuation
+                 t_clean = t_raw.strip().rstrip(",.;·")
+                 if unicodedata.normalize('NFC', t_clean) == target:
+                     v_list = L.u(w, otype='verse')
+                     if v_list:
+                         verse_nodes.add(v_list[0])
+        
+        if not verse_nodes:
+            # Fallback: Try searching without accents? (Strip accents)
+            # For now, just return empty.
+            return []
+            
+        sorted_nodes = sorted(list(verse_nodes))
+        
+        results = []
+        for v_node in sorted_nodes:
+            section = api.T.sectionFromNode(v_node) # (Book, Chapter, Verse)
+            book_name, chapter, verse_num = section
+            
+            # Map N1904 book name to code
+            book_code = self.normalizer.n1904_to_code.get(book_name.replace(" ", "_"))
+            if not book_code:
+                 book_code = self.normalizer.n1904_to_code.get(book_name)
+            if not book_code:
+                 book_code = book_name
+            
+            text = api.T.text(v_node)
+            
+            # Identify matching surface forms for highlighting
+            highlights = []
+            verse_word_nodes = L.d(v_node, otype='word')
+            for w in verse_word_nodes:
+                # Check Lemma
+                l_raw = F.lemma.v(w)
+                is_match = False
+                if l_raw and unicodedata.normalize('NFC', l_raw) == target:
+                    is_match = True
+                
+                # Check Surface
+                if not is_match:
+                    t_raw = api.T.text(w)
+                    if t_raw:
+                        t_clean = t_raw.strip().rstrip(",.;·")
+                        if unicodedata.normalize('NFC', t_clean) == target:
+                            is_match = True
+                            
+                if is_match:
+                    # Store the exact text segment provided by T.text(w)
+                    # This includes trailing spaces/punctuation which is what we want to highlight?
+                    # Or just the word?
+                    # T.text(w) usually is "Word " or "Word."
+                    # If we highlight the whole thing it includes space.
+                    # Let's highlight the stripped version?
+                    # But replacing in full text is easier with exact string.
+                    # Let's store the exact T.text(w) for simpler replacement, 
+                    # OR store the node text and let CLI handle?
+                    # Simple regex replace might differ if same word appears twice but only one matches lemma?
+                    # (Unlikely for same surface form, but possible if homonyms).
+                    # For now, let's just highlights all occurrences of these surface strings.
+                    highlights.append(api.T.text(w).strip())
+
+            results.append(Verse(
+                book_code=book_code,
+                chapter=int(chapter),
+                verse=int(verse_num),
+                text=text,
+                language=Language.GREEK,
+                version="N1904",
+                node=v_node,
+                metadata={"highlight_words": list(set(highlights))}
+            ))
+            
+        return results
+
     def get_chapter(self, book_code: str, chapter: int, version: str) -> List[Verse]:
         version = version.upper()
         if version == "N1904":

@@ -35,7 +35,7 @@ v3. et Dieu dit: «Que la lumière soit!» Et la lumière fut.
 ```sh
 git clone https://github.com/yourusername/ScripturesApp.git
 cd ScripturesApp
-make install
+make install # Sets up environment and installs dependencies
 bin/biblecli "Mk 1:1" # A simple query to test the installation
 ```
 
@@ -228,6 +228,40 @@ biblecli add -c personal -s "Jn 1:1" -t "Gn 1:1" --type parallel -n "Echoes of c
 
 This will automatically create/update `data/references_nt_personal.json`.
 
+
+### Greek Concordance (Find)
+
+Find all occurrences of a specific Greek word in the N1904 New Testament.
+Supports both **Lemma** (Dictionary Form) and **Surface Form** (Exact Word) search.
+
+**Find by Lemma:**
+Find all forms of a word (e.g. "to love").
+```sh
+biblecli find "ἀγαπάω"
+```
+
+**Find by Surface Form:**
+Find a specific inflected form (e.g. "Little children").
+```sh
+biblecli find "Τεκνία"
+```
+
+**Features:**
+- **Robustness**: Automatically handles accent differences (normalization).
+- **Dual-Language**: Displays Greek text + French TOB translation.
+- **Summary**: Shows total occurrence count.
+- **Highlighting**: **Matching words are highlighted in RED** within the Greek text for easy identification.
+
+**Example Output:**
+```text
+[Matthieu 19:16]
+... ἵνα σχῶ ζωὴν αἰώνιον; 
+(TOB) ... avoir la vie éternelle?
+```
+*(The word **αἰώνιος** would be displayed in red in your terminal)*
+
+
+
 ### Shortcuts
 
 For convenience, you can use the `tob` command to quickly access the TOB French translation. It is equivalent to `biblecli ... -b tob`.
@@ -254,16 +288,15 @@ Many common abbreviations are supported in both English and French:
 
 ### Testing
 
-This project uses `pytest` for unit testing. To run the tests, first ensure you have installed the dependencies:
+### Testing
+
+This project uses `pytest` for unit testing. The `make install` command automatically runs the tests for you.
+
+To run tests manually:
 
 ```bash
-pip install -r requirements.txt
-```
-
-Then run:
-
-```bash
-pytest
+# Ensure you are in the virtual environment or use the binary directly
+.venv/bin/pytest
 ```
 
 ## API Integration (macOS App)

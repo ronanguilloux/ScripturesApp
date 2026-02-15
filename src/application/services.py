@@ -110,6 +110,7 @@ class BibleService:
         
         
         # 0. Parse Reference (Handle Range vs Single)
+
         target_verses = []
         book_code = None
         chapter = None

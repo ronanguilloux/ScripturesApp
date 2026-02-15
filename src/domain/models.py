@@ -74,3 +74,13 @@ class VerseResponse(BaseModel):
     
     model_config = ConfigDict(frozen=True)
 
+class SearchResult(BaseModel):
+    ref: str
+    text: str
+    translation: str
+    score: float
+    book: str
+    chapter: int
+    verse: int
+
+

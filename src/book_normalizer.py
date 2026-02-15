@@ -88,6 +88,8 @@ class BookNormalizer:
                     # Register English variations
                     self.abbreviations[en_key] = en_key
                     self.abbreviations[code] = en_key 
+                    if "_" in en_key:
+                        self.abbreviations[en_key.replace("_", " ")] = en_key
                     if en_label: self.abbreviations[en_label] = en_key
                     
                     # Register all abbreviations

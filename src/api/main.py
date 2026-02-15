@@ -4,20 +4,27 @@ import sys
 import os
 
 # Ensure src is in path for imports to work as expected by existing code structure
-# This allows 'import application...' to work if running from root as 'uvicorn src.api.main:app'
-# provided we add 'src' to path.
 current_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.dirname(current_dir)
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
+from contextlib import asynccontextmanager
 from application.services import BibleService
 from domain.models import VerseResponse
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("Initializing services...")
+    yield
+    # Shutdown
 
 app = FastAPI(
     title="ScripturesApp API",
     description="Backend for ScripturesApp Native App",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Dependency Injection for Service

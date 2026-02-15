@@ -13,6 +13,9 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "BibleApp"),
+            name: "BibleApp",
+            resources: [
+                .process("Resources/bible_books.json")
+            ]),
     ]
 )

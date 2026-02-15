@@ -1,4 +1,9 @@
-text-fabric[github]==12.3.7
-pytest
-typer
-pydantic
+text-fabric[github]~=13.1
+pytest~=8.4
+typer~=0.23.1
+pydantic~=2.12
+fastapi~=0.128.8
+uvicorn~=0.39.0
+requests~=2.32
+numpy~=2.0
+zipp~=3.20

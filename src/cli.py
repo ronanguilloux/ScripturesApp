@@ -1,3 +1,8 @@
+import warnings
+# Suppress urllib3 localized warning on macOS with LibreSSL
+warnings.filterwarnings("ignore", module="urllib3")
+
+
 import typer
 import os
 from typing import Optional, List
@@ -6,6 +11,7 @@ from typing_extensions import Annotated
 from presenter import VersePresenter
 from book_normalizer import BookNormalizer
 from references_db import ReferenceDatabase
+
 
 app = typer.Typer(help="ScripturesApp - Modern Python Bible Reader", context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -46,7 +52,7 @@ class AdapterFactory:
         cls._adapter = adapter
         return adapter
 
-@app.command()
+@app.command(name="read")
 def main(
     ctx: typer.Context,
     reference: Annotated[Optional[str], typer.Argument(help="Bible reference (e.g. 'Gn 1:1')")] = None,
@@ -84,8 +90,10 @@ def main(
         add -c [COLLECTION] -s [SOURCE] -t [TARGET] --type [TYPE] -n [NOTE]
                Add a new cross-reference/note to a personal collection.
 
-        search [QUERY] (Coming soon)
-               Search for specific terms in the texts.
+        find [LEMMA/WORD]
+               Find all occurrences of a Greek word (Lemma or Surface form).
+               Displays Greek text + French translation. 
+               Matches are highlighted.
 
     SHORTCUTS
         tob [REFERENCE]
@@ -277,6 +285,7 @@ def main(
         presenter.present_cross_references(response.cross_references, ref_texts=ref_texts, formatter=format_ref)
 
 
+@app.command(name="add")
 def add_cli(
     collection: Annotated[str, typer.Option("--collection", "-c", help="Collection name (e.g., 'notes').")],
     source: Annotated[str, typer.Option("--source", "-s", help="Source verse (e.g., 'Mc 1:1')")],
@@ -307,10 +316,97 @@ def add_cli(
         typer.secho(f"Error: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
+@app.command()
+def find(
+    lemma: Annotated[str, typer.Argument(help="Greek lemma to find (e.g. 'ἀγαπάω')")],
+    limit: Annotated[int, typer.Option("--limit", "-k", help="Number of results to show")] = 20,
+):
+    """
+    Find all occurrences of a specific Greek lemma in the N1904 New Testament.
+    Displays the Greek text and the corresponding French (TOB) translation.
+    """
+    from application.services import AdapterFactory
+    adapter = AdapterFactory.get()
+    
+    typer.secho(f"Searching for lemma: {lemma}...", fg=typer.colors.CYAN)
+    
+    try:
+        results = adapter.find_lemma(lemma)
+    except Exception as e:
+         typer.secho(f"Error searching for lemma: {e}", fg=typer.colors.RED)
+         raise typer.Exit(code=1)
+         
+    if not results:
+        typer.secho(f"No occurrences found for lemma '{lemma}'. Check accents/spelling.", fg=typer.colors.YELLOW)
+        raise typer.Exit(code=0)
+        
+    count = len(results)
+    typer.secho(f"Found {count} occurrences.", bold=True, fg=typer.colors.GREEN)
+    
+    # Pagination / Limiting
+    display_results = results[:limit]
+    
+    normalizer = adapter.normalizer
+    
+    for verse in display_results:
+        # 1. Header (Reference)
+        # Localize if possible
+        ref_display = f"{verse.book_code} {verse.chapter}:{verse.verse}"
+        
+        n1904_name = normalizer.code_to_n1904.get(verse.book_code, verse.book_code)
+        tob_name = normalizer.n1904_to_tob.get(n1904_name)
+        if tob_name:
+             ref_display = f"{tob_name} {verse.chapter}:{verse.verse}"
+             
+        typer.secho(f"[{ref_display}]", fg=typer.colors.GREEN, bold=True)
+        
+        # 2. Greek Text
+        text_display = verse.text
+        # Apply Highlighting
+        highlights = verse.metadata.get("highlight_words", [])
+        if highlights:
+            for word in highlights:
+                # Use a specific color for the found word
+                # We need to be careful not to replace parts of other words if shorter?
+                # But we have the full surface form from T.text usually?
+                # Actually I stored .strip() version.
+                # So we replace "Word" with "RED(Word)".
+                # Simple replace might hit substrings.
+                # Regex with word boundaries is safer for English, but Greek?
+                # Greek word boundaries \b work?
+                # Let's try simple replace for now, it's a visual aid.
+                styled_word = typer.style(word, fg=typer.colors.RED, bold=True)
+                text_display = text_display.replace(word, styled_word)
+        
+        typer.echo(text_display)
+        
+        # 3. French Context (TOB)
+        try:
+             fr_verse = adapter.get_verse(verse.book_code, verse.chapter, verse.verse, version="TOB")
+             if fr_verse and fr_verse.text:
+                 typer.secho(f"(TOB) {fr_verse.text}", fg=typer.colors.CYAN)
+        except: pass
+        
+        typer.secho("-" * 40, fg=typer.colors.BRIGHT_BLACK)
+        
+    if count > limit:
+        typer.secho(f"... and {count - limit} more. Use --limit to see more.", fg=typer.colors.YELLOW)
+        
+    typer.echo("")
+    typer.secho(f"Total occurrences: {count}", fg=typer.colors.GREEN, bold=True)
+
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "add":
-        sys.argv.pop(1) # Remove "add" command so typer sees the rest as args/options
-        typer.run(add_cli)
-    else:
-        app()
+    # Manual routing for default command
+    if len(sys.argv) > 1:
+        cmd = sys.argv[1]
+        # Check if first arg is a registered command
+        # Commands: add, find. (read is explicit default)
+        # Also need to handle "list" which reference logic handles, or help flags
+        if cmd not in ["add", "read", "find"] and not cmd.startswith("-"):
+             # Insert 'read' to make it the command
+             sys.argv.insert(1, "read")
+    
+    # Debug
+    # print(f"DEBUG: sys.argv={sys.argv}", file=sys.stderr)
+    app()
