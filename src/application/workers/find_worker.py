@@ -221,7 +221,10 @@ def find_in_text_fabric(lemma: str, original_word: str, limit: int):
     lemma_gloss = ""
     api = adapter.n1904.api if adapter.n1904 else None
     if api:
+        # Normalize the lemma (strip accents for better matching)
         norm_lemma = unicodedata.normalize('NFC', lemma)
+        
+        # Try to find ANY word with this lemma to get the gloss
         for w in api.F.otype.s('word'):
             l_raw = api.F.lemma.v(w)
             if l_raw and unicodedata.normalize('NFC', l_raw) == norm_lemma:
@@ -232,6 +235,19 @@ def find_in_text_fabric(lemma: str, original_word: str, limit: int):
                     lemma_gloss = api.F.trans.v(w) or ""
                 if lemma_gloss:
                     break
+        
+        # If first lemma didn't work, try the ORIGINAL word's lemma
+        # (in case smart_lemmatize corrected it)
+        if not lemma_gloss and original_word != lemma:
+            for w in api.F.otype.s('word'):
+                l_raw = api.F.lemma.v(w)
+                if l_raw and unicodedata.normalize('NFC', l_raw) == unicodedata.normalize('NFC', original_word):
+                    if hasattr(api.F, 'gloss'):
+                        lemma_gloss = api.F.gloss.v(w) or ""
+                    if not lemma_gloss and hasattr(api.F, 'trans'):
+                        lemma_gloss = api.F.trans.v(w) or ""
+                    if lemma_gloss:
+                        break
 
     # Build output
     output = {

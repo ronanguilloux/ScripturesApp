@@ -378,14 +378,11 @@ def find(
     count = output.get("total", 0)
     lemma_gloss = output.get("lemma_gloss", "")
     
-    typer.secho(f"Searching for lemma: {lemma} ({lemma_gloss})...", fg=typer.colors.CYAN)
-    
     if count == 0:
-        typer.secho(f"No occurrences found for '{word}' (lemma: {lemma}).", fg=typer.colors.YELLOW)
+        typer.secho(f"No occurrences found for '{word}'.", fg=typer.colors.YELLOW)
         raise typer.Exit(code=0)
-        
-    typer.secho(f"Found {count} occurrences.", bold=True, fg=typer.colors.GREEN)
     
+    # Show results
     results = output.get("results", [])
     
     for item in results:
@@ -394,7 +391,7 @@ def find(
         # 1. Header is pre-formatted in 'ref' by worker?
         # Worker output ref: "1 Corinthiens 2:12" (Localized TOB name if valid)
         ref_display = item.get("ref", "")
-        typer.secho(f"[{ref_display}]", fg=typer.colors.GREEN, bold=True)
+        typer.secho(f"{ref_display}", fg=typer.colors.GREEN, bold=True)
         
         # 2. Greek Text
         greek_text = item.get("greek", "")
@@ -418,7 +415,24 @@ def find(
          typer.secho(f"... and {count - len(results)} more.", fg=typer.colors.YELLOW)
 
     typer.echo("")
-    typer.secho(f"Total occurrences: {count}", fg=typer.colors.GREEN, bold=True)
+    
+    # Summary at end
+    typer.secho("─" * 60, fg=typer.colors.BRIGHT_BLACK)
+    
+    # Show transformation if lemma differs from input
+    if word != lemma:
+        if lemma_gloss:
+            typer.secho(f"Lemma: {word} → {lemma} ({lemma_gloss})", fg=typer.colors.CYAN, bold=True)
+        else:
+            typer.secho(f"Lemma: {word} → {lemma}", fg=typer.colors.CYAN, bold=True)
+    else:
+        if lemma_gloss:
+            typer.secho(f"Lemma: {lemma} ({lemma_gloss})", fg=typer.colors.CYAN, bold=True)
+        else:
+            typer.secho(f"Lemma: {lemma}", fg=typer.colors.CYAN, bold=True)
+    
+    typer.secho(f"Total occurrences: {count}", bold=True, fg=typer.colors.GREEN)
+
 
 if __name__ == "__main__":
     import sys
