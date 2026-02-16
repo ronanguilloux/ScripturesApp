@@ -15,9 +15,9 @@ struct ContentView: View {
                     }
                     .tag(0)
                 
-                SearchView()
+                FindView()
                     .tabItem {
-                        Label("Search", systemImage: "magnifyingglass")
+                        Label("Find", systemImage: "character.book.closed")
                     }
                     .tag(1)
             }

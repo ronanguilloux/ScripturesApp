@@ -74,3 +74,26 @@ struct SearchResult: Codable, Identifiable {
     let chapter: Int
     let verse: Int
 }
+
+// MARK: - FindResponse
+struct FindResponse: Codable {
+    let lemma: String
+    let original: String
+    let lemmaGloss: String
+    let total: Int
+    let results: [FindResultItem]
+    
+    enum CodingKeys: String, CodingKey {
+        case lemma, original, total, results
+        case lemmaGloss = "lemma_gloss"
+    }
+}
+
+// MARK: - FindResultItem
+struct FindResultItem: Codable, Identifiable {
+    var id: String { ref }
+    let ref: String
+    let greek: String
+    let french: String
+    let highlights: [String]
+}

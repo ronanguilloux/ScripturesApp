@@ -52,10 +52,8 @@ class ServerManager: ObservableObject {
         task.currentDirectoryPath = path
         task.executableURL = URL(fileURLWithPath: "/bin/zsh")
         
-        // Command to start uvicorn
-        // We use -c to run the full command string
-        // Check if .venv exists, otherwise might need another way or assume standard layout
-        let command = ".venv/bin/uvicorn api.main:app --app-dir src --port 8000"
+        // Command to start uvicorn (using module path without --app-dir)
+        let command = ".venv/bin/uvicorn src.api.main:app --port 8000"
         task.arguments = ["-c", command]
         
         let pipe = Pipe()
