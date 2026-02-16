@@ -4,9 +4,10 @@ from typing import List, Optional, Any
 from tf.app import use
 from tf.fabric import Fabric
 
-from ports.bible_provider import BibleProvider, MetadataProvider
-from domain.models import Verse, Book, VerseCrossReferences, Language, CrossReferenceType
-from book_normalizer import BookNormalizer
+from src.ports.bible_provider import BibleProvider, MetadataProvider
+from src.domain.models import Verse, VerseItem, CrossReferenceType, Book, VerseCrossReferences, Language
+from src.utils.greek_normalizer import GreekNormalizer
+from src.book_normalizer import BookNormalizer
 
 class TextFabricAdapter(BibleProvider, MetadataProvider):
     def __init__(self, data_dir: str, n1904_provider=None, lxx_provider=None, bhsa_provider=None, tob_provider=None, bj_provider=None, nav_provider=None):

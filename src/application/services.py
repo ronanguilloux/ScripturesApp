@@ -1,10 +1,10 @@
 import os
 import contextlib
 from typing import List, Optional, Tuple, Any, Dict
-from adapters.text_fabric_adapter import TextFabricAdapter
-from domain.models import VerseResponse, VerseCrossReferences, CrossReferenceRelation, VerseItem
-from book_normalizer import BookNormalizer
-from references_db import ReferenceDatabase
+from src.adapters.text_fabric_adapter import TextFabricAdapter
+from src.domain.models import VerseResponse, VerseCrossReferences, CrossReferenceRelation, VerseItem
+from src.book_normalizer import BookNormalizer
+from src.references_db import ReferenceDatabase
 from tf.app import use
 
 # Helper/Factory for Adapter (moved from CLI, but we might want a better place)

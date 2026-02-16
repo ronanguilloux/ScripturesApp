@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from domain.models import Verse, Book, VerseCrossReferences
+from src.domain.models import Verse, Book, VerseCrossReferences
 
 class BibleProvider(ABC):
     """
