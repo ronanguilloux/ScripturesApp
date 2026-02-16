@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 import sys
 import os
 
-# Ensure src is in path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+# Ensure project root is in path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from api.main import app, get_service
-from application.services import BibleService
-from domain.models import Verse, Language
+from src.api.main import app, get_service
+from src.application.services import BibleService
+from src.domain.models import Verse, Language
 
 # Mock Data
 def create_mock_verse(book, version, text, lang):
@@ -92,7 +92,7 @@ def mock_ref_db():
 
 @pytest.fixture
 def bible_service(mock_adapter, mock_ref_db):
-    with patch('application.services.ReferenceDatabase', return_value=mock_ref_db):
+    with patch('src.application.services.ReferenceDatabase', return_value=mock_ref_db):
         service = BibleService(adapter=mock_adapter)
         service.ref_db = mock_ref_db
         return service

@@ -5,8 +5,7 @@ from tf.app import use
 from tf.fabric import Fabric
 
 from src.ports.bible_provider import BibleProvider, MetadataProvider
-from src.domain.models import Verse, VerseItem, CrossReferenceType, Book, VerseCrossReferences, Language
-from src.utils.greek_normalizer import GreekNormalizer
+from src.domain.models import Verse, Book, VerseCrossReferences, Language
 from src.book_normalizer import BookNormalizer
 
 class TextFabricAdapter(BibleProvider, MetadataProvider):
@@ -683,18 +682,6 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
                             is_match = True
                             
                 if is_match:
-                    # Store the exact text segment provided by T.text(w)
-                    # This includes trailing spaces/punctuation which is what we want to highlight?
-                    # Or just the word?
-                    # T.text(w) usually is "Word " or "Word."
-                    # If we highlight the whole thing it includes space.
-                    # Let's highlight the stripped version?
-                    # But replacing in full text is easier with exact string.
-                    # Let's store the exact T.text(w) for simpler replacement, 
-                    # OR store the node text and let CLI handle?
-                    # Simple regex replace might differ if same word appears twice but only one matches lemma?
-                    # (Unlikely for same surface form, but possible if homonyms).
-                    # For now, let's just highlights all occurrences of these surface strings.
                     highlights.append(api.T.text(w).strip())
 
             results.append(Verse(
@@ -709,6 +696,151 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
             ))
             
         return results
+
+    def build_stripped_index(self):
+        """
+        Builds two indices:
+        1. stripped_form -> set(lemmas) (Direct fuzzy lookup)
+        2. stripped_form -> set(polytonic_surfaces) (For OdyCy restoration)
+        """
+        if hasattr(self, '_stripped_index') and self._stripped_index:
+            return
+
+        api = self.n1904.api
+        F = api.F
+        T = api.T
+        
+        from src.utils.greek_normalizer import GreekNormalizer
+        
+        index = {} # stripped_form -> set(lemmas)
+        surface_index = {} # stripped_form -> set(polytonic_surface)
+        
+        for w in F.otype.s('word'):
+            lemma = F.lemma.v(w)
+            if not lemma: continue
+            
+            # --- Index Lemma ---
+            stripped_lemma = GreekNormalizer.strip_accents(lemma)
+            if stripped_lemma not in index: index[stripped_lemma] = set()
+            index[stripped_lemma].add(lemma)
+            
+            # --- Index Surface Text ---
+            # Use raw text but stripped of punctuation
+            raw_text = T.text(w).strip()
+            # Remove trailing punctuation often found in TF text
+            clean_text = raw_text.rstrip(",.;·")
+            
+            stripped_text = GreekNormalizer.strip_accents(clean_text)
+            
+            # 1. Map to Lemma
+            if stripped_text not in index: index[stripped_text] = set()
+            index[stripped_text].add(lemma)
+            
+            # 2. Map to Polytonic Surface
+            if stripped_text not in surface_index: surface_index[stripped_text] = set()
+            surface_index[stripped_text].add(clean_text)
+            
+        self._stripped_index = index
+        self._surface_index = surface_index
+
+        # --- Index LXX (Optional Augmentation) ---
+        # Scan LXX for additional polytonic surface forms not in N1904
+        # This helps with restoration of forms like 'ειλημμένων'
+        lxx_app = self.lxx
+        if lxx_app:
+            try:
+                LXX_F = lxx_app.api.F
+                LXX_T = lxx_app.api.T
+                
+                for w in LXX_F.otype.s('word'):
+                    # Get Surface
+                    raw_text = LXX_T.text(w).strip()
+                    clean_text = raw_text.rstrip(",.;·")
+                    stripped_text = GreekNormalizer.strip_accents(clean_text)
+                    
+                    # 2. Map to Polytonic Surface (Add to existing set)
+                    if stripped_text not in surface_index: surface_index[stripped_text] = set()
+                    surface_index[stripped_text].add(clean_text)
+                    
+                    # 1. Map to Lemma (If valid lemma exists)
+                    # LXX might use 'lex' or 'lemma'
+                    lxx_lemma = ""
+                    if hasattr(LXX_F, 'lemma'): lxx_lemma = LXX_F.lemma.v(w)
+                    elif hasattr(LXX_F, 'lex'): lxx_lemma = LXX_F.lex.v(w)
+                        
+                    if lxx_lemma:
+                         # Normalize lemma too?
+                         stripped_lemma = GreekNormalizer.strip_accents(lxx_lemma)
+                         
+                         if stripped_text not in index: index[stripped_text] = set()
+                         index[stripped_text].add(lxx_lemma)
+                         
+                         if stripped_lemma not in index: index[stripped_lemma] = set()
+                         index[stripped_lemma].add(lxx_lemma)
+            except Exception:
+                # LXX loading is optional/fallible
+                pass
+        
+        # --- Index Supplemental Lexicon (Optional) ---
+        # Load manual dataset to cover gaps in N1904/LXX (based on user request for "compressed data")
+        # E.g. Missing lemmas like 'εἰλημμένος' -> 'λαμβάνω'
+        try:
+            import json
+            import os
+            
+            # Locate supplemental_lemmas.json relative to project root
+            # adapter is in src/adapters -> src -> root
+            # Assume file is in data/lexicons/supplemental_lemmas.json
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            lexicon_path = os.path.join(base_dir, "data", "lexicons", "supplemental_lemmas.json")
+            
+            # Supplemental Lexicon disabled per user request (focus on OdyCy+Vectors)
+            # if os.path.exists(lexicon_path):
+            #    print(f"Loading supplements from {lexicon_path}", file=sys.stderr)
+            #    with open(lexicon_path, 'r') as f:
+            #        supplements = json.load(f)
+            #        print(f"Loaded {len(supplements)} supplemental lemmas.", file=sys.stderr)
+            #        for surface, lemma in supplements.items():
+            #             stripped_surface = GreekNormalizer.strip_accents(surface)
+            #             stripped_lemma = GreekNormalizer.strip_accents(lemma)
+            #             
+            #             # Index Text -> Lemma
+            #             if stripped_surface not in index: index[stripped_surface] = set()
+            #             index[stripped_surface].add(lemma)
+            #             
+            #             # Index Lemma -> Lemma (for self-referential check)
+            #             if stripped_lemma not in index: index[stripped_lemma] = set()
+            #             index[stripped_lemma].add(lemma)
+            #             
+            #             # Index Polytonic Surface (if surface is polytonic)
+            #             # Simple check: if surface not == stripped_surface
+            #             if surface != stripped_surface:
+            #                 if stripped_surface not in surface_index: surface_index[stripped_surface] = set()
+            #                 surface_index[stripped_surface].add(surface)
+
+        except Exception as e:
+            # Silent fail for optional data
+             pass
+             
+    def find_lemmas_by_stripped_surface(self, stripped_surface: str) -> set[str]:
+        """
+        Returns a set of polytonic lemmas that match the given stripped surface form.
+        """
+        if not hasattr(self, '_stripped_index') or not self._stripped_index:
+            self.build_stripped_index()
+            
+        return self._stripped_index.get(stripped_surface, set())
+
+    def find_polytonic_surfaces(self, stripped_surface: str) -> set:
+        """
+        Returns a set of actual polytonic surface forms appearing in the text
+        that match the given stripped form.
+        Useful for restoring accents before feeding to OdyCy.
+        """
+        if not hasattr(self, '_surface_index') or not self._surface_index:
+            self.build_stripped_index()
+            
+        return self._surface_index.get(stripped_surface, set())
 
     def get_chapter(self, book_code: str, chapter: int, version: str) -> List[Verse]:
         version = version.upper()

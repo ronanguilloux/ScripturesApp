@@ -234,6 +234,8 @@ This will automatically create/update `data/references_nt_personal.json`.
 Find all occurrences of a specific Greek word in the N1904 New Testament.
 Supports both **Lemma** (Dictionary Form) and **Surface Form** (Exact Word) search.
 
+**Enhanced Lemmatization**: Uses **OdyCy** (Ancient Greek spaCy) with 9,710 corpus-derived corrections for **93% accuracy** on complex forms including monotonic/unaccented input (`λαμβανω`), perfect participles (`εἰλημμένων`), suppletive stems (`λήψομαι`), and compounds (`ἀπολάβῃ`).
+
 **Find by Lemma:**
 Find all forms of a word (e.g. "to love").
 ```sh

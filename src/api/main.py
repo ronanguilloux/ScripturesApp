@@ -10,8 +10,8 @@ if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
 from contextlib import asynccontextmanager
-from application.services import BibleService
-from domain.models import VerseResponse
+from src.application.services import BibleService
+from src.domain.models import VerseResponse
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

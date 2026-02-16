@@ -8,9 +8,9 @@ import os
 from typing import Optional, List
 from typing_extensions import Annotated
 
-from presenter import VersePresenter
-from book_normalizer import BookNormalizer
-from references_db import ReferenceDatabase
+from src.presenter import VersePresenter
+from src.book_normalizer import BookNormalizer
+from src.references_db import ReferenceDatabase
 
 
 app = typer.Typer(help="ScripturesApp - Modern Python Bible Reader", context_settings={"help_option_names": ["-h", "--help"]})
@@ -118,7 +118,7 @@ def main(
     # 1. Handle "list books" command
     if reference == "list":
          if extra_args and extra_args[0] == "books":
-              from application.services import AdapterFactory
+              from src.application.services import AdapterFactory
               # Basic listing
               # Initialize normalizer to get book names
               # We can use AdapterFactory to get adapter and normalizer
@@ -152,7 +152,7 @@ def main(
         typer.echo(ctx.get_help())
         raise typer.Exit(code=0)
 
-    from application.services import BibleService
+    from src.application.services import BibleService
     service = BibleService()
     presenter = VersePresenter()
     
@@ -297,7 +297,7 @@ def add_cli(
     Add a new cross-reference/note to a personal collection.
     """
     try:
-        from application.services import AdapterFactory
+        from src.application.services import AdapterFactory
         adapter = AdapterFactory.get()
         # AdapterFactory calculates data_dir internally, but we can access it via adapter instance
         data_dir = adapter.data_dir
@@ -318,80 +318,105 @@ def add_cli(
 
 @app.command()
 def find(
-    lemma: Annotated[str, typer.Argument(help="Greek lemma to find (e.g. 'ἀγαπάω')")],
+    word: Annotated[str, typer.Argument(help="Greek word to find (e.g. 'ἀγαπάω' or 'εἴληφεν')")],
     limit: Annotated[int, typer.Option("--limit", "-k", help="Number of results to show")] = 20,
 ):
     """
-    Find all occurrences of a specific Greek lemma in the N1904 New Testament.
+    Find all occurrences of a specific Greek word in the N1904 New Testament using OdyCy lemmatization.
     Displays the Greek text and the corresponding French (TOB) translation.
     """
-    from application.services import AdapterFactory
-    adapter = AdapterFactory.get()
+    import subprocess
+    import json
+    import sys
     
-    typer.secho(f"Searching for lemma: {lemma}...", fg=typer.colors.CYAN)
+    typer.secho(f"Analyzing '{word}' with OdyCy...", fg=typer.colors.CYAN)
+    
+    # Locate worker script
+    # Assuming src/cli.py is at [root]/src/cli.py
+    # and worker is at [root]/src/application/workers/find_worker.py
+    src_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(src_dir)
+    worker_script = os.path.join(project_root, "src", "application", "workers", "find_worker.py")
+    
+    # Locate venv-spacy python
+    # [root]/.venv-spacy/bin/python3
+    venv_python = os.path.join(project_root, ".venv-spacy", "bin", "python3")
+    
+    if not os.path.exists(venv_python):
+         # Fallback to system python? No, likely won't have odycy.
+         # Check if we are checking from within venv which has odycy?
+         # If the current python has odycy, use it.
+         try: 
+             import spacy
+             # Check for model?
+             # For now, just try default fallbacks or error.
+             pass
+         except:
+             typer.secho("Error: .venv-spacy environment not found and current env lacks OdyCy.", fg=typer.colors.RED)
+             typer.secho(f"Expected at: {venv_python}", fg=typer.colors.YELLOW)
+             raise typer.Exit(code=1)
+
+    cmd = [venv_python, worker_script, word, "--limit", str(limit)]
     
     try:
-        results = adapter.find_lemma(lemma)
+        result = subprocess.run(cmd, capture_output=True, text=True)
     except Exception as e:
-         typer.secho(f"Error searching for lemma: {e}", fg=typer.colors.RED)
-         raise typer.Exit(code=1)
-         
-    if not results:
-        typer.secho(f"No occurrences found for lemma '{lemma}'. Check accents/spelling.", fg=typer.colors.YELLOW)
+        typer.secho(f"Error running worker: {e}", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+        
+    if result.returncode != 0:
+        typer.secho(f"Worker failed: {result.stderr}", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+        
+    try:
+        output = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        typer.secho(f"Invalid output from worker: {result.stdout}", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+        
+    lemma = output.get("lemma", word)
+    count = output.get("total", 0)
+    lemma_gloss = output.get("lemma_gloss", "")
+    
+    typer.secho(f"Searching for lemma: {lemma} ({lemma_gloss})...", fg=typer.colors.CYAN)
+    
+    if count == 0:
+        typer.secho(f"No occurrences found for '{word}' (lemma: {lemma}).", fg=typer.colors.YELLOW)
         raise typer.Exit(code=0)
         
-    count = len(results)
     typer.secho(f"Found {count} occurrences.", bold=True, fg=typer.colors.GREEN)
     
-    # Pagination / Limiting
-    display_results = results[:limit]
+    results = output.get("results", [])
     
-    normalizer = adapter.normalizer
-    
-    for verse in display_results:
-        # 1. Header (Reference)
-        # Localize if possible
-        ref_display = f"{verse.book_code} {verse.chapter}:{verse.verse}"
+    for item in results:
+        # Item structure: {ref, book_code, chapter, verse, greek, french, highlights}
         
-        n1904_name = normalizer.code_to_n1904.get(verse.book_code, verse.book_code)
-        tob_name = normalizer.n1904_to_tob.get(n1904_name)
-        if tob_name:
-             ref_display = f"{tob_name} {verse.chapter}:{verse.verse}"
-             
+        # 1. Header is pre-formatted in 'ref' by worker?
+        # Worker output ref: "1 Corinthiens 2:12" (Localized TOB name if valid)
+        ref_display = item.get("ref", "")
         typer.secho(f"[{ref_display}]", fg=typer.colors.GREEN, bold=True)
         
         # 2. Greek Text
-        text_display = verse.text
-        # Apply Highlighting
-        highlights = verse.metadata.get("highlight_words", [])
-        if highlights:
-            for word in highlights:
-                # Use a specific color for the found word
-                # We need to be careful not to replace parts of other words if shorter?
-                # But we have the full surface form from T.text usually?
-                # Actually I stored .strip() version.
-                # So we replace "Word" with "RED(Word)".
-                # Simple replace might hit substrings.
-                # Regex with word boundaries is safer for English, but Greek?
-                # Greek word boundaries \b work?
-                # Let's try simple replace for now, it's a visual aid.
-                styled_word = typer.style(word, fg=typer.colors.RED, bold=True)
-                text_display = text_display.replace(word, styled_word)
+        greek_text = item.get("greek", "")
+        highlights = item.get("highlights", [])
         
-        typer.echo(text_display)
+        for hw in highlights:
+            # Simple highlighting
+            styled = typer.style(hw, fg=typer.colors.RED, bold=True)
+            greek_text = greek_text.replace(hw, styled)
+            
+        typer.echo(greek_text)
         
-        # 3. French Context (TOB)
-        try:
-             fr_verse = adapter.get_verse(verse.book_code, verse.chapter, verse.verse, version="TOB")
-             if fr_verse and fr_verse.text:
-                 typer.secho(f"(TOB) {fr_verse.text}", fg=typer.colors.CYAN)
-        except: pass
-        
+        # 3. French Text
+        french_text = item.get("french", "")
+        if french_text:
+            typer.secho(f"(TOB) {french_text}", fg=typer.colors.CYAN)
+            
         typer.secho("-" * 40, fg=typer.colors.BRIGHT_BLACK)
         
-    if count > limit:
-        typer.secho(f"... and {count - limit} more. Use --limit to see more.", fg=typer.colors.YELLOW)
-        
+    if count > len(results):
+         typer.secho(f"... and {count - len(results)} more.", fg=typer.colors.YELLOW)
+
     typer.echo("")
     typer.secho(f"Total occurrences: {count}", fg=typer.colors.GREEN, bold=True)
 

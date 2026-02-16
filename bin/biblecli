@@ -23,4 +23,6 @@ else
 fi
 
 # Run the main script with all passed arguments
-"$VENV_DIR/bin/python3" $BIBLE_DIR/src/cli.py "$@"
+export PYTHONPATH="$BIBLE_DIR"
+cd "$BIBLE_DIR" || exit 1
+"$VENV_DIR/bin/python3" -m src.cli "$@"

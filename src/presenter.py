@@ -1,6 +1,6 @@
 import typer
 from typing import List, Optional
-from domain.models import Verse, VerseCrossReferences, Language
+from src.domain.models import Verse, VerseCrossReferences, Language
 
 class VersePresenter:
     def present_verse(self, verse: Verse, additional_versions: List[Verse] = None, compact_mode: int = 0, book_name_override: Optional[str] = None):

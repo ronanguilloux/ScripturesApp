@@ -7,3 +7,6 @@ uvicorn~=0.39.0
 requests~=2.32
 numpy~=2.0
 zipp~=3.20
+spacy~=3.7.2
+sentence-transformers~=3.0
+https://huggingface.co/chq-matteo/grc_odycy_joint_sm/resolve/main/grc_odycy_joint_sm-any-py3-none-any.whl
