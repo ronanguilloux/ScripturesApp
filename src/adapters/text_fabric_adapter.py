@@ -841,6 +841,25 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
             self.build_stripped_index()
             
         return self._surface_index.get(stripped_surface, set())
+    
+    def find_lemma_by_stripped_surface(self, stripped_word: str) -> Optional[str]:
+        """
+        Find lemma directly by accent-insensitive surface match.
+        This is the fast path for TF-first hybrid lemmatization.
+        Returns the first lemma found (sorted for stability), or None.
+        """
+        if not hasattr(self, '_stripped_index') or not self._stripped_index:
+            self.build_stripped_index()
+        
+        # _stripped_index maps stripped_form -> set(lemmas)
+        # This includes both stripped variants of surface forms AND stripped lemmas themselves
+        lemmas = self._stripped_index.get(stripped_word)
+        
+        if lemmas:
+            # Return first sorted lemma for stability
+            return sorted(list(lemmas))[0]
+        
+        return None
 
     def get_chapter(self, book_code: str, chapter: int, version: str) -> List[Verse]:
         version = version.upper()

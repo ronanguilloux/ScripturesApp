@@ -329,7 +329,7 @@ def find(
     import json
     import sys
     
-    typer.secho(f"Analyzing '{word}' with OdyCy...", fg=typer.colors.CYAN)
+    typer.secho(f"Searching for '{word}'...", fg=typer.colors.CYAN)
     
     # Locate worker script
     # Assuming src/cli.py is at [root]/src/cli.py

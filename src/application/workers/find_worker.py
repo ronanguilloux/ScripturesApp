@@ -73,100 +73,95 @@ def load_alignment_map():
 
 def smart_lemmatize(word: str, adapter) -> str:
     """
-    Enhanced lemmatization strategy:
-    1. Polytonic Restoration -> OdyCy
-    2. Alignment Check (OdyCy Lemma -> N1904 Lemma)
+    TF-First Hybrid Lemmatization Strategy:
+    1. TF Direct (accent-insensitive) → Fast path for known NT words
+    2. OdyCy + Alignment → Fallback for unknown forms
+    3. Polytonic Restoration → Edge cases
     """
+    import logging
+    import time
+    
+    start = time.time()
+    
+    # Load alignment map once
     alignment = load_alignment_map()
     
-    # helper to check alignment
     def check_alignment(lemma):
+        """Helper to check alignment corrections"""
         if alignment and lemma in alignment:
             return alignment[lemma]
         return lemma
-
-    # 1. OdyCy Initial Attempt
-    odycy_lemma = lemmatize(word)
     
-    # Check alignment immediately?
-    # e.g. input="εἰλημμένος" -> odycy="εἰλημμένος" -> aligned="λαμβάνω"
-    aligned_lemma = check_alignment(odycy_lemma)
-    if aligned_lemma != odycy_lemma:
-         return aligned_lemma
-
-    # If OdyCy returned unknown or unchanged word, try restoration
-
-    
-    # 2. Check if this lemma exists in TF (exact match)
-    # If the input was perfect Polytonic, OdyCy likely got it right.
-    # We trust OdyCy if its output is a valid lemma in TF.
-    # But wait, purely relying on "is it in TF" might be wrong if OdyCy hallucinated a real word that is WRONG for this context?
-    # But here we have no context (single word).
-    # So "Is it a valid lemma?" is the best check we have.
-    
-    # Fallback / Validation Logic
-    # We want to use OdyCy to Validate the "Restored" Polytonic form if the original input failed.
-    
-    # Heuristic: If OdyCy returns the word itself (unchanged) and that word is not a known lemma, it's likely a failure.
-    # Or if input was monotonic/unaccented, OdyCy output is trustworthy ONLY if it's a valid TF key.
-
+    # Ensure indices are built
     adapter.build_stripped_index()
-    
-    # Manual Overrides logic moved to TextFabricAdapter.build_stripped_index
-    # The adapter now loads data/lexicons/supplemental_lemmas.json automatically
     stripped_input = GreekNormalizer.strip_accents(word)
     
-    # Step A: Polytonic Restoration (Exact)
+    # ==========================================
+    # LAYER 1: TF DIRECT LOOKUP (Fast Path)
+    # ==========================================
+    tf_lemma = adapter.find_lemma_by_stripped_surface(stripped_input)
+    if tf_lemma:
+        elapsed = (time.time() - start) * 1000
+        logging.debug(f"Lemmatized '{word}' → '{tf_lemma}' in {elapsed:.1f}ms (layer: TF-direct)")
+        return tf_lemma
+    
+    # ==========================================
+    # LAYER 2: ODYCY + ALIGNMENT (Fallback)
+    # ==========================================
+    odycy_lemma = lemmatize(word)
+    aligned_lemma = check_alignment(odycy_lemma)
+    
+    if aligned_lemma != odycy_lemma:
+        # Alignment corrected it
+        elapsed = (time.time() - start) * 1000
+        logging.debug(f"Lemmatized '{word}' → '{aligned_lemma}' in {elapsed:.1f}ms (layer: OdyCy+alignment)")
+        return aligned_lemma
+    
+    # ==========================================
+    # LAYER 3: POLYTONIC RESTORATION (Edge Cases)
+    # ==========================================
+    # Try to restore polytonic forms and feed to OdyCy
     candidates = adapter.find_polytonic_surfaces(stripped_input)
     
-    # Step A2: Polytonic Restoration (Fuzzy)
+    # Fuzzy matching variations
     if not candidates:
         # Try movable nu
         if not stripped_input.endswith("ν"):
-             candidates = adapter.find_polytonic_surfaces(stripped_input + "ν")
-             
-        # Try modern/ancient ending swap (-αν -> -ον)
+            candidates = adapter.find_polytonic_surfaces(stripped_input + "ν")
+        
+        # Try modern/ancient ending swap (-αν → -ον)
         if not candidates and stripped_input.endswith("αν"):
-             # e.g. elaban -> elabon
-             variation = stripped_input[:-2] + "ον"
-             candidates = adapter.find_polytonic_surfaces(variation)
-
+            variation = stripped_input[:-2] + "ον"
+            candidates = adapter.find_polytonic_surfaces(variation)
+    
     if candidates:
-        # We found potential Polytonic forms!
-        # Pick the best candidate (alphabetically first for stability)
+        # Pick best candidate (alphabetically first for stability)
         best_candidate = sorted(list(candidates))[0]
         
         # Feed RESTORED form to OdyCy
         restored_lemma = lemmatize(best_candidate)
         
-        # Check if the result is valid
-        stripped_chk = GreekNormalizer.strip_accents(restored_lemma)
-        if stripped_chk in adapter._stripped_index:
-             return restored_lemma
-             
-        # Feature: Recursive Check via Alignment (Already covered above? Or double check?)
-        # Restored lemma might be different from initial lemma.
-        # e.g. restored="εἰλημμένος", map says "λαμβάνω".
+        # Check alignment for restored lemma
         aligned_restored = check_alignment(restored_lemma)
         if aligned_restored != restored_lemma:
-             return aligned_restored
+            elapsed = (time.time() - start) * 1000
+            logging.debug(f"Lemmatized '{word}' → '{aligned_restored}' in {elapsed:.1f}ms (layer: Restored+alignment)")
+            return aligned_restored
         
-    # Final Fallback: Just return a TF match directly if exists
-
-    # Final Fallback: Just return a TF match directly if exists
-    tf_candidates = adapter.find_lemmas_by_stripped_surface(stripped_input)
-    if tf_candidates:
-        return sorted(list(tf_candidates))[0]
-        
+        # Validate restored lemma exists in TF
+        stripped_restored = GreekNormalizer.strip_accents(restored_lemma)
+        if stripped_restored in adapter._stripped_index:
+            elapsed = (time.time() - start) * 1000
+            logging.debug(f"Lemmatized '{word}' → '{restored_lemma}' in {elapsed:.1f}ms (layer: Restored)")
+            return restored_lemma
+    
+    # ==========================================
+    # LAST RESORT: Return OdyCy result
+    # ========================================== 
+    elapsed = (time.time() - start) * 1000
+    logging.debug(f"Lemmatized '{word}' → '{odycy_lemma}' in {elapsed:.1f}ms (layer: OdyCy-only, TF miss)")
     return odycy_lemma
 
-    if not candidate_lemmas:
-        # Neither OdyCy lemma nor Surface lookup found anything.
-        return odycy_lemma
-
-    # We have candidates from Surface lookup.
-    # Return the first sorted one.
-    return sorted(list(candidate_lemmas))[0]
 
 
 def find_in_text_fabric(lemma: str, original_word: str, limit: int):
@@ -300,11 +295,11 @@ def main():
     
     word = args.word
     
-    # Step 1: Lemmatize with OdyCy
-    lemma = lemmatize(word)
-    
-    # Step 2: Search Text-Fabric
-    output = find_in_text_fabric(lemma, word, args.limit)
+    # Step 1: Search Text-Fabric
+    # We pass the original word as the 'lemma' initially.
+    # find_in_text_fabric will call smart_lemmatize internally to find the real lemma.
+    # This enables lazy-loading of OdyCy (only if TF lookup fails).
+    output = find_in_text_fabric(word, word, args.limit)
     
     # Check if the search yielded results.
     # If not, and if the lemma is same as word (OdyCy failure) or just no results,
