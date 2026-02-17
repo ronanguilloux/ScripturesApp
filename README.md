@@ -330,6 +330,13 @@ This project exposes a JSON API to serve native applications.
     ```
 -   **Endpoint**: `GET /api/v1/search`
 
+Note that **the server restarts automatically** when lanuching the app
+
+```bash
+cd macos
+swift run
+```
+
 # macOS Native App
 
 This project now includes a **native utility for macOS** that lives in your menu bar.
@@ -367,6 +374,8 @@ To build a release binary:
 ```bash
 cd macos
 swift build -c release
+# or
+swift build && swift run
 ```
 
 The binary will be located in `.build/release/BibleApp`.
