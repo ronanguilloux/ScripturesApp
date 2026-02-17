@@ -54,9 +54,25 @@ ine interface for the Greek
             -n, --note:       Text content of the  
  note                                              
                                                    
-     search [QUERY] (Coming soon)                  
+     find [QUERY]                                  
             Search for specific terms in the       
  texts.                                            
+                                                   
+            Arguments:                             
+            QUERY:     Greek word (Lemma or        
+ Surface form) or French expression.               
+                                                   
+            Options:                               
+            -b, --bible:  Search in French         
+ translation (tob, bj).                            
+                          Default: Greek (N1904).  
+                                                   
+            --limit, -k:  Max results (def: 20).   
+                                                   
+            Examples:                              
+            biblecli find "ἀγαπάω"                 
+            biblecli find "Dieu" -b tob            
+            biblecli find "Fils de l'homme" -b bj                                              
                                                    
  SHORTCUTS                                         
      tob [REFERENCE]                               

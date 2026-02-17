@@ -229,14 +229,18 @@ biblecli add -c personal -s "Jn 1:1" -t "Gn 1:1" --type parallel -n "Echoes of c
 This will automatically create/update `data/references_nt_personal.json`.
 
 
-### Greek Concordance (Find)
+### Search (Concordance)
+
+The `find` command allows you to search for words or expressions in the texts.
+
+#### Greek Search (Default)
 
 Find all occurrences of a specific Greek word in the N1904 New Testament.
 Supports both **Lemma** (Dictionary Form) and **Surface Form** (Exact Word) search.
 
 **Enhanced Lemmatization**: Uses **OdyCy** (Ancient Greek spaCy) with 9,710 corpus-derived corrections for **93% accuracy** on complex forms including monotonic/unaccented input (`λαμβανω`), perfect participles (`εἰλημμένων`), suppletive stems (`λήψομαι`), and compounds (`ἀπολάβῃ`).
 
-> **Why This Matters**: The lemmatization uses a **corpus-wide alignment** (9,677 corrections covering all 19,513 unique N1904 forms) rather than word-specific patches. This means the system automatically handles **any Greek word in the New Testament** with ~90% real-world accuracy, not just common verbs. Combined with polytonic restoration (strips accents from your input, finds matching polytonic forms in the corpus, then feeds them to OdyCy), it provides robust lemmatization even when you type simplified monotonic or unaccented Greek.
+> **Why This Matters**: The lemmatization uses a **corpus-wide alignment** (9,677 corrections covering all 19,513 unique N1904 forms) rather than word-specific patches. This means the system automatically handles **any Greek word in the New Testament** with ~90% real-world accuracy.
 
 **Find by Lemma:**
 Find all forms of a word (e.g. "to love").
@@ -250,19 +254,31 @@ Find a specific inflected form (e.g. "Little children").
 biblecli find "Τεκνία"
 ```
 
-**Features:**
-- **Robustness**: Automatically handles accent differences (normalization).
-- **Dual-Language**: Displays Greek text + French TOB translation.
-- **Summary**: Shows total occurrence count.
-- **Highlighting**: **Matching words are highlighted in RED** within the Greek text for easy identification.
+#### French Search (TOB / BJ)
 
-**Example Output:**
-```text
-[Matthieu 19:16]
-... ἵνα σχῶ ζωὴν αἰώνιον; 
-(TOB) ... avoir la vie éternelle?
+You can search for exact words or expressions in the French translations (TOB or BJ) using the `--bible` or `-b` flag.
+
+**Features:**
+- **Case-insensitive**: "Dieu", "dieu", "DIEU" match correctly.
+- **Accent-insensitive**: "Élie" matches "elie".
+- **Exact Expressions**: Finds exact phrases like "Fils de l'homme".
+
+**Search in TOB:**
+```sh
+biblecli find "Dieu" -b tob
 ```
-*(The word **αἰώνιος** would be displayed in red in your terminal)*
+
+**Search in BJ:**
+```sh
+biblecli find "Fils de l'homme" -b bj
+```
+
+**Output:**
+Matches are **highlighted in RED** in the terminal.
+```text
+[Matthieu 8:20]
+(BJ) ... le Fils de l'homme, lui, n'a pas où reposer la tête.
+```
 
 
 

@@ -1,8 +1,11 @@
 import os
 import contextlib
 from typing import List, Optional, Any
-from tf.app import use
-from tf.fabric import Fabric
+import os
+import contextlib
+from typing import List, Optional, Any
+# from tf.app import use (Moved to lazy load)
+# from tf.fabric import Fabric (Moved to lazy load)
 
 from src.ports.bible_provider import BibleProvider, MetadataProvider
 from src.domain.models import Verse, Book, VerseCrossReferences, Language
@@ -45,6 +48,7 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
             if not self._n1904_app:
                 with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
                     try:
+                        from tf.app import use
                         self._n1904_app = use("CenterBLC/N1904", version="1.0.0", silent=True)
                     except Exception:
                         pass
@@ -61,6 +65,7 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
                 if os.path.exists(self.lxx_dir):
                     with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
                         try:
+                            from tf.fabric import Fabric
                             TF = Fabric(locations=[self.lxx_dir], silent=True)
                             api = TF.load("", silent=True)
                             self._lxx_app = type('LXXStub', (), {'api': api})() # Mock app wrapper
@@ -69,6 +74,7 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
                 if not self._lxx_app:
                      with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
                         try:
+                            from tf.app import use
                             self._lxx_app = use("CenterBLC/LXX", version="1935", check=False, silent=True)
                         except Exception:
                             pass
@@ -83,6 +89,7 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
             if not self._bhsa_app:
                 with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
                      try:
+                         from tf.app import use
                          self._bhsa_app = use("ETCBC/bhsa", version="2021", silent=True)
                      except Exception:
                          pass
@@ -98,6 +105,7 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
                  if os.path.exists(self.tob_dir):
                      with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
                          try:
+                             from tf.fabric import Fabric
                              TF = Fabric(locations=[self.tob_dir], silent=True)
                              self._tob_api = TF.load('text book chapter verse', silent=True)
                          except Exception:
@@ -114,6 +122,7 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
                  if os.path.exists(self.bj_dir):
                      with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
                          try:
+                             from tf.fabric import Fabric
                              TF = Fabric(locations=[self.bj_dir], silent=True)
                              self._bj_api = TF.load('text book chapter verse', silent=True)
                          except Exception:
@@ -130,6 +139,7 @@ class TextFabricAdapter(BibleProvider, MetadataProvider):
                  if os.path.exists(self.nav_dir):
                      with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
                          try:
+                             from tf.fabric import Fabric
                              TF = Fabric(locations=[self.nav_dir], silent=True)
                              self._nav_api = TF.load('text', silent=True)
                          except Exception:

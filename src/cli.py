@@ -1,4 +1,5 @@
 import warnings
+import re # Added for highlighting
 # Suppress urllib3 localized warning on macOS with LibreSSL
 warnings.filterwarnings("ignore", module="urllib3")
 
@@ -91,8 +92,12 @@ def main(
                Add a new cross-reference/note to a personal collection.
 
         find [LEMMA/WORD]
-               Find all occurrences of a Greek word (Lemma or Surface form).
-               Displays Greek text + French translation. 
+               Find all occurrences of a Greek word or French expression.
+               
+               Options:
+               -b [tob|bj]: Search in French translation (TOB or BJ).
+               
+               Displays Greek text + French translation (for Greek search).
                Matches are highlighted.
 
     SHORTCUTS
@@ -318,46 +323,63 @@ def add_cli(
 
 @app.command()
 def find(
-    word: Annotated[str, typer.Argument(help="Greek word to find (e.g. 'ἀγαπάω' or 'εἴληφεν')")],
+    word: Annotated[str, typer.Argument(help="Search query (Greek word or French expression)")],
     limit: Annotated[int, typer.Option("--limit", "-k", help="Number of results to show")] = 20,
+    bible: Annotated[Optional[str], typer.Option("--bible", "-b", help="French Bible version (tob, bj)")] = None,
 ):
     """
-    Find all occurrences of a specific Greek word in the N1904 New Testament using OdyCy lemmatization.
-    Displays the Greek text and the corresponding French (TOB) translation.
+    Find occurrences of a word or expression.
+    
+    By default, searches for a Greek word in the N1904 New Testament (using OdyCy lemmatization).
+    
+    If --bible/-b is specified (tob or bj), searches in the French translation instead.
+    Example:
+        biblecli find "Dieu" -b tob
     """
     import subprocess
     import json
     import sys
     
-    typer.secho(f"Searching for '{word}'...", fg=typer.colors.CYAN)
-    
-    # Locate worker script
-    # Assuming src/cli.py is at [root]/src/cli.py
-    # and worker is at [root]/src/application/workers/find_worker.py
-    src_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(src_dir)
-    worker_script = os.path.join(project_root, "src", "application", "workers", "find_worker.py")
-    
-    # Locate venv-spacy python
-    # [root]/.venv-spacy/bin/python3
-    venv_python = os.path.join(project_root, ".venv-spacy", "bin", "python3")
-    
-    if not os.path.exists(venv_python):
-         # Fallback to system python? No, likely won't have odycy.
-         # Check if we are checking from within venv which has odycy?
-         # If the current python has odycy, use it.
-         try: 
-             import spacy
-             # Check for model?
-             # For now, just try default fallbacks or error.
-             pass
-         except:
-             typer.secho("Error: .venv-spacy environment not found and current env lacks OdyCy.", fg=typer.colors.RED)
-             typer.secho(f"Expected at: {venv_python}", fg=typer.colors.YELLOW)
+    # Determine mode
+    if bible:
+        # French Search
+        bible_version = bible.lower()
+        if bible_version not in ["tob", "bj"]:
+             typer.secho(f"Invalid bible version: {bible}", fg=typer.colors.RED)
+             typer.echo("Allowed values: tob, bj")
              raise typer.Exit(code=1)
+             
+        typer.secho(f"Searching for '{word}' in {bible_version.upper()}...", fg=typer.colors.CYAN)
+        
+        src_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(src_dir)
+        worker_script = os.path.join(project_root, "src", "application", "workers", "french_worker.py")
+        
+        # Use simple python3, no need for venv-spacy strictly, but better consistency?
+        # build_french_index used venv-spacy because I ran it so. 
+        # french_worker uses standard libs (re, json, unicodedata).
+        # EXCEPT if I wanted to use tf? No, I avoided tf in worker.
+        # So system python is fine.
+        # But let's use sys.executable
+        
+        cmd = [sys.executable, worker_script, word, "--bible", bible_version, "--limit", str(limit)]
+        
+    else:
+        # Greek Search (Existing)
+        typer.secho(f"Searching for '{word}' (Greek)...", fg=typer.colors.CYAN)
+        
+        src_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(src_dir)
+        worker_script = os.path.join(project_root, "src", "application", "workers", "find_worker.py")
+        
+        venv_python = os.path.join(project_root, ".venv-spacy", "bin", "python3")
+        
+        if not os.path.exists(venv_python):
+             # Fallback logic...
+             pass 
+             
+        cmd = [venv_python, worker_script, word, "--limit", str(limit)]
 
-    cmd = [venv_python, worker_script, word, "--limit", str(limit)]
-    
     try:
         result = subprocess.run(cmd, capture_output=True, text=True)
     except Exception as e:
@@ -373,6 +395,9 @@ def find(
     except json.JSONDecodeError:
         typer.secho(f"Invalid output from worker: {result.stdout}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
+
+    # ... Display Logic (Generic) ...
+
         
     lemma = output.get("lemma", word)
     count = output.get("total", 0)
@@ -407,7 +432,27 @@ def find(
         # 3. French Text
         french_text = item.get("french", "")
         if french_text:
-            typer.secho(f"(TOB) {french_text}", fg=typer.colors.CYAN)
+            version_label = bible.upper() if bible else "TOB"
+            
+            # Apply highlighting to French text
+            # Use same highlights list from worker (which contains the query)
+            # Use regex to replace case-insensitive matches while preserving original text casing
+            for hw in highlights:
+                try:
+                     # Escape hw for regex
+                     escaped_hw = re.escape(hw)
+                     # Find all case-insensitive matches
+                     # pattern = re.compile(escaped_hw, re.IGNORECASE)
+                     # re.sub with a function allows using original matched text
+                     
+                     def replacer(match):
+                         return typer.style(match.group(0), fg=typer.colors.RED, bold=True)
+                         
+                     french_text = re.sub(escaped_hw, replacer, french_text, flags=re.IGNORECASE)
+                except Exception:
+                    pass
+            
+            typer.secho(f"({version_label}) {french_text}", fg=typer.colors.CYAN)
             
         typer.secho("-" * 40, fg=typer.colors.BRIGHT_BLACK)
         
@@ -420,16 +465,19 @@ def find(
     typer.secho("─" * 60, fg=typer.colors.BRIGHT_BLACK)
     
     # Show transformation if lemma differs from input
+    # Dynamic label: "Expression" if spaces in word, else "Lemma"
+    label = "Expression" if " " in word.strip() else "Lemma"
+    
     if word != lemma:
         if lemma_gloss:
-            typer.secho(f"Lemma: {word} → {lemma} ({lemma_gloss})", fg=typer.colors.CYAN, bold=True)
+            typer.secho(f"{label}: {word} → {lemma} ({lemma_gloss})", fg=typer.colors.CYAN, bold=True)
         else:
-            typer.secho(f"Lemma: {word} → {lemma}", fg=typer.colors.CYAN, bold=True)
+            typer.secho(f"{label}: {word} → {lemma}", fg=typer.colors.CYAN, bold=True)
     else:
         if lemma_gloss:
-            typer.secho(f"Lemma: {lemma} ({lemma_gloss})", fg=typer.colors.CYAN, bold=True)
+            typer.secho(f"{label}: {lemma} ({lemma_gloss})", fg=typer.colors.CYAN, bold=True)
         else:
-            typer.secho(f"Lemma: {lemma}", fg=typer.colors.CYAN, bold=True)
+            typer.secho(f"{label}: {lemma}", fg=typer.colors.CYAN, bold=True)
     
     typer.secho(f"Total occurrences: {count}", bold=True, fg=typer.colors.GREEN)
 
