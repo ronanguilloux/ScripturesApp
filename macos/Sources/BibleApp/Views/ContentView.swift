@@ -2,8 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab = 0
-    @AppStorage("windowWidth") private var windowWidth: Double = 400
-    @AppStorage("windowHeight") private var windowHeight: Double = 600
+    @AppStorage("windowWidth_v2") private var windowWidth: Double = 600
+    @AppStorage("windowHeight_v2") private var windowHeight: Double = 500
     @State private var dragStartSize: CGSize?
 
     var body: some View {

@@ -11,7 +11,7 @@ if src_dir not in sys.path:
 
 from contextlib import asynccontextmanager
 from src.application.services import BibleService
-from src.domain.models import VerseResponse
+from src.domain.models import VerseResponse, FindResponse
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,4 +54,25 @@ def search_verses(
         show_crossrefs=crossref,
         crossref_full=crossref_full,
         crossref_source=crossref_source
+    )
+
+@app.get("/api/v1/find", response_model=FindResponse)
+def find_words(
+    q: str = Query(..., description="Search query (Greek word or French expression)"),
+    tr: Optional[List[str]] = Query(None, description="Translations to show (en, fr, gr, hb, ar)"),
+    v: Optional[str] = Query(None, description="Greek Corpus (nt, lxx, all)"),
+    bible: Optional[str] = Query(None, description="French version (tob, bj)"),
+    limit: int = Query(20, description="Max results"),
+    service: BibleService = Depends(get_service)
+):
+    """
+    Find occurrences of a word or expression.
+    Detects script (Greek vs Latin) to determine search mode.
+    """
+    return service.find(
+        query=q,
+        limit=limit,
+        bible=bible,
+        version=v,
+        translations=tr
     )

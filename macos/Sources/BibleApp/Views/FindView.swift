@@ -7,51 +7,106 @@ struct FindView: View {
     @State private var errorMessage: String?
     @State private var isLoading = false
     
+    // Options
+    @State private var selectedVersion = "NT" // Greek Corpus: NT, LXX, ALL
+    @State private var selectedBible = "TOB" // French Version: TOB, BJ
+    @State private var selectedTranslations: Set<String> = [] // EN, FR, GR, HB
+    
     @FocusState private var isFocused: Bool
+    
+    let availableTranslations = ["EN", "FR", "GR", "HB"]
     
     var body: some View {
         VStack(spacing: 0) {
-            // Input Bar
-            HStack(spacing: 12) {
-                // Greek word field
-                HStack {
-                    Image(systemName: "character.book.closed")
+            // MARK: - Options & Search Bar (Compact)
+            VStack(spacing: 8) {
+                // Top Row: Options + Toggle
+                HStack(spacing: 12) {
+                    // Corpus Picker
+                    Picker("", selection: $selectedVersion) {
+                        Text("NT").tag("NT")
+                        Text("LXX").tag("LXX")
+                        Text("All").tag("ALL")
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 70)
+                    .controlSize(.small)
+                    
+                    // Bible Version Picker
+                    Picker("", selection: $selectedBible) {
+                        Text("TOB").tag("TOB")
+                        Text("BJ").tag("BJ")
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 70)
+                    .controlSize(.small)
+                    
+                    // Translations Toggles
+                    HStack(spacing: 2) {
+                        ForEach(availableTranslations, id: \.self) { code in
+                            Toggle(code, isOn: Binding(
+                                get: { selectedTranslations.contains(code) },
+                                set: { isOn in
+                                    if isOn { selectedTranslations.insert(code) }
+                                    else { selectedTranslations.remove(code) }
+                                }
+                            ))
+                            .toggleStyle(.button)
+                            .controlSize(.mini)
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                
+                // Bottom Row: Search Input + Limit
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
-                    TextField("Greek word (e.g. ἀγαπάω)", text: $searchText)
+                    
+                    TextField("Greek word (e.g. ἀγαπάω) or French expression", text: $searchText)
                         .textFieldStyle(.plain)
-                        .font(.title2)
+                        .font(.body)
                         .focused($isFocused)
                         .onSubmit {
                             performFind()
                         }
+                        .frame(maxWidth: .infinity)
+                    
+                    // Limit field
+                    HStack(spacing: 4) {
+                        Text("Limit:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("20", text: $limitText)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption)
+                            .frame(width: 40)
+                            .controlSize(.small)
+                            .onSubmit {
+                                performFind()
+                            }
+                    }
+                    
+                    if isLoading {
+                        ProgressView()
+                            .controlSize(.mini)
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                
-                // Limit field
-                HStack {
-                    Text("Limit:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("20", text: $limitText)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.body)
-                        .frame(width: 60)
-                        .onSubmit {
-                            performFind()
-                        }
-                }
-                
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.5)
-                }
+                .padding(6)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
             }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(10)
+            .background(Color(NSColor.windowBackgroundColor)) // Slightly different bg for header area?
             
             Divider()
             
-            // Results
+            // MARK: - Results
             ScrollView {
                 if let response = findResponse {
                     VStack(alignment: .leading, spacing: 12) {
@@ -63,17 +118,29 @@ struct FindView: View {
                                     .font(.headline)
                                     .foregroundColor(.green)
                                 
-                                // Greek text with highlighting
-                                HighlightedText(text: result.greek, highlights: result.highlights)
+                                // Main Text (Greek or French) with highlighting
+                                HighlightedText(text: result.text, highlights: result.highlights)
                                     .font(.body)
                                     .textSelection(.enabled)
                                 
-                                // French translation
-                                if !result.french.isEmpty {
-                                    Text("(TOB) \(result.french)")
-                                        .font(.body)
-                                        .foregroundColor(.cyan)
-                                        .textSelection(.enabled)
+                                // Translations
+                                if !result.translations.isEmpty {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        ForEach(result.translations.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
+                                            HStack(alignment: .top) {
+                                                Text(key)
+                                                    .font(.caption)
+                                                    .bold()
+                                                    .foregroundColor(.secondary)
+                                                    .frame(width: 30, alignment: .leading)
+                                                
+                                                Text(value)
+                                                    .font(.body)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                    }
+                                    .padding(.leading, 8)
                                 }
                                 
                                 Divider()
@@ -81,7 +148,7 @@ struct FindView: View {
                             }
                         }
                         
-                        // "... and X more" message
+                        // Footer
                         if response.total > response.results.count {
                             Text("... and \(response.total - response.results.count) more.")
                                 .font(.body)
@@ -89,33 +156,28 @@ struct FindView: View {
                                 .padding(.vertical, 4)
                         }
                         
-                        // Summary footer
+                        // Summary
                         VStack(alignment: .leading, spacing: 4) {
                             Divider()
                                 .background(Color.gray)
                                 .padding(.vertical, 8)
                             
-                            // Lemma transformation
+                            // Lemma info
+                            HStack {
+                                Text("Lemma: \(response.lemma)")
+                                    .font(.headline)
+                                    .foregroundColor(.cyan)
+                                
+                                if !response.lemmaGloss.isEmpty {
+                                    Text("(\(response.lemmaGloss))")
+                                        .font(.headline)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
                             if response.original != response.lemma {
-                                if !response.lemmaGloss.isEmpty {
-                                    Text("Lemma: \(response.original) → \(response.lemma) (\(response.lemmaGloss))")
-                                        .font(.headline)
-                                        .foregroundColor(.cyan)
-                                } else {
-                                    Text("Lemma: \(response.original) → \(response.lemma)")
-                                        .font(.headline)
-                                        .foregroundColor(.cyan)
-                                }
-                            } else {
-                                if !response.lemmaGloss.isEmpty {
-                                    Text("Lemma: \(response.lemma) (\(response.lemmaGloss))")
-                                        .font(.headline)
-                                        .foregroundColor(.cyan)
-                                } else {
-                                    Text("Lemma: \(response.lemma)")
-                                        .font(.headline)
-                                        .foregroundColor(.cyan)
-                                }
+                                Text("Original: \(response.original)")
+                                    .font(.caption)
                             }
                             
                             Text("Total occurrences: \(response.total)")
@@ -134,9 +196,9 @@ struct FindView: View {
                         Image(systemName: "character.book.closed")
                             .font(.largeTitle)
                             .foregroundColor(.secondary.opacity(0.5))
-                        Text("Find all occurrences of a Greek word")
+                        Text("Find occurrences of a word or expression")
                             .foregroundColor(.secondary)
-                        Text("Supports lemmatization with OdyCy")
+                        Text("Auto-detects Greek or French mode")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -156,57 +218,56 @@ struct FindView: View {
         errorMessage = nil
         findResponse = nil
         
-        let word = searchText
+        let query = searchText
         let limit = Int(limitText) ?? 20
         
-        // Get project root from ServerManager
-        let projectRoot = ServerManager.shared.serverPath
-        let venvPython = "\(projectRoot)/.venv-spacy/bin/python3"
-        let workerScript = "\(projectRoot)/src/application/workers/find_worker.py"
+        // Build URL
+        var components = URLComponents(string: "http://127.0.0.1:8000/api/v1/find")!
+        var queryItems = [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "v", value: selectedVersion.lowercased()),
+            URLQueryItem(name: "bible", value: selectedBible.lowercased())
+        ]
         
-        DispatchQueue.global(qos: .userInitiated).async {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: venvPython)
-            task.arguments = [workerScript, word, "--limit", "\(limit)"]
-            task.currentDirectoryPath = projectRoot
-            
-            let pipe = Pipe()
-            task.standardOutput = pipe
-            task.standardError = pipe
-            
-            do {
-                try task.run()
-                task.waitUntilExit()
+        // Add translations (multiple 'tr' params)
+        for tr in selectedTranslations {
+            queryItems.append(URLQueryItem(name: "tr", value: tr.lowercased()))
+        }
+        
+        components.queryItems = queryItems
+        
+        guard let url = components.url else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                isLoading = false
                 
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                
-                DispatchQueue.main.async {
-                    isLoading = false
-                    
-                    if task.terminationStatus != 0 {
-                        let errorText = String(data: data, encoding: .utf8) ?? "Unknown error"
-                        errorMessage = "Worker failed: \(errorText)"
-                        return
-                    }
-                    
-                    do {
-                        let result = try JSONDecoder().decode(FindResponse.self, from: data)
-                        self.findResponse = result
-                        if result.total == 0 {
-                            self.errorMessage = "No occurrences found for '\(word)'."
-                        }
-                    } catch {
-                        errorMessage = "Parsing error: \(error.localizedDescription)"
-                        print("Raw data: \(String(data: data, encoding: .utf8) ?? "Bad data")")
-                    }
+                if let error = error {
+                    errorMessage = "Error: \(error.localizedDescription)"
+                    return
                 }
-            } catch {
-                DispatchQueue.main.async {
-                    isLoading = false
-                    errorMessage = "Failed to run worker: \(error.localizedDescription)"
+                
+                guard let data = data else { return }
+                
+                // Debug: Print raw response if needed
+                // print(String(data: data, encoding: .utf8) ?? "nil")
+                
+                do {
+                    let result = try JSONDecoder().decode(FindResponse.self, from: data)
+                    self.findResponse = result
+                    if result.total == 0 {
+                        self.errorMessage = "No occurrences found for '\(query)'."
+                    }
+                } catch {
+                    errorMessage = "Parsing error: \(error.localizedDescription)"
+                    print("Raw data: \(String(data: data, encoding: .utf8) ?? "Bad data")")
                 }
             }
-        }
+        }.resume()
     }
 }
 

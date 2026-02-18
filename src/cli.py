@@ -325,163 +325,151 @@ def add_cli(
 def find(
     word: Annotated[str, typer.Argument(help="Search query (Greek word or French expression)")],
     limit: Annotated[int, typer.Option("--limit", "-k", help="Number of results to show")] = 20,
-    bible: Annotated[Optional[str], typer.Option("--bible", "-b", help="French Bible version (tob, bj)")] = None,
+    bible: Annotated[Optional[str], typer.Option("--bible", "-b", help="French Version (tob, bj)")] = None,
+    version: Annotated[Optional[str], typer.Option("--version", "-v", help="Greek Corpus (nt, lxx, all)")] = None,
+    translations: Annotated[Optional[List[str]], typer.Option("--tr", "-tr", "-t", help="Translations to show (en, fr, gr, hb)")] = None,
 ):
     """
     Find occurrences of a word or expression.
     
-    By default, searches for a Greek word in the N1904 New Testament (using OdyCy lemmatization).
+    Automatically detects script (Greek vs Latin) to determine search mode.
     
-    If --bible/-b is specified (tob or bj), searches in the French translation instead.
-    Example:
-        biblecli find "Dieu" -b tob
+    Modes:
+    1. Greek Search (Default for Greek script):
+       - Searches in Greek corpus (NT default).
+       - Use -v to select corpus: nt, lxx, all.
+       - Use -b to select preferred French translation version (tob/bj) if displaying French.
+    
+    2. French Search (Default for Latin script with -b):
+       - Searches in French translations (TOB/BJ).
+       - Requires -b [tob|bj].
+
+    Examples:
+        biblecli find "λόγος"                  # Greek NT search
+        biblecli find "ἀρχή" -v lxx             # Greek LXX search
+        biblecli find "Dieu" -b tob            # French TOB search
+        biblecli find "λόγος" -tr fr           # Greek search + French translation
+        biblecli find "λόγος" -tr fr en -v lxx # Greek LXX search + Translations
     """
-    import subprocess
-    import json
+    from src.application.services import BibleService
     import sys
-    
-    # Determine mode
-    if bible:
-        # French Search
-        bible_version = bible.lower()
-        if bible_version not in ["tob", "bj"]:
-             typer.secho(f"Invalid bible version: {bible}", fg=typer.colors.RED)
-             typer.echo("Allowed values: tob, bj")
-             raise typer.Exit(code=1)
-             
-        typer.secho(f"Searching for '{word}' in {bible_version.upper()}...", fg=typer.colors.CYAN)
-        
-        src_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(src_dir)
-        worker_script = os.path.join(project_root, "src", "application", "workers", "french_worker.py")
-        
-        # Use simple python3, no need for venv-spacy strictly, but better consistency?
-        # build_french_index used venv-spacy because I ran it so. 
-        # french_worker uses standard libs (re, json, unicodedata).
-        # EXCEPT if I wanted to use tf? No, I avoided tf in worker.
-        # So system python is fine.
-        # But let's use sys.executable
-        
-        cmd = [sys.executable, worker_script, word, "--bible", bible_version, "--limit", str(limit)]
-        
-    else:
-        # Greek Search (Existing)
-        typer.secho(f"Searching for '{word}' (Greek)...", fg=typer.colors.CYAN)
-        
-        src_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(src_dir)
-        worker_script = os.path.join(project_root, "src", "application", "workers", "find_worker.py")
-        
-        venv_python = os.path.join(project_root, ".venv-spacy", "bin", "python3")
-        
-        if not os.path.exists(venv_python):
-             # Fallback logic...
-             pass 
-             
-        cmd = [venv_python, worker_script, word, "--limit", str(limit)]
 
+    # Initialize Service
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        service = BibleService()
     except Exception as e:
-        typer.secho(f"Error running worker: {e}", fg=typer.colors.RED)
+        typer.secho(f"Error initializing service: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
-        
-    if result.returncode != 0:
-        typer.secho(f"Worker failed: {result.stderr}", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
-        
+
     try:
-        output = json.loads(result.stdout)
-    except json.JSONDecodeError:
-        typer.secho(f"Invalid output from worker: {result.stdout}", fg=typer.colors.RED)
+        # Call Service
+        response = service.find(
+            query=word,
+            limit=limit,
+            bible=bible,
+            version=version,
+            translations=translations
+        )
+    except ValueError as e:
+        typer.secho(str(e), fg=typer.colors.YELLOW)
+        raise typer.Exit(code=1)
+    except Exception as e:
+        typer.secho(f"Error during search: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
-    # ... Display Logic (Generic) ...
-
-        
-    lemma = output.get("lemma", word)
-    count = output.get("total", 0)
-    lemma_gloss = output.get("lemma_gloss", "")
-    
-    if count == 0:
+    if response.total == 0:
         typer.secho(f"No occurrences found for '{word}'.", fg=typer.colors.YELLOW)
         raise typer.Exit(code=0)
-    
-    # Show results
-    results = output.get("results", [])
-    
-    for item in results:
-        # Item structure: {ref, book_code, chapter, verse, greek, french, highlights}
-        
-        # 1. Header is pre-formatted in 'ref' by worker?
-        # Worker output ref: "1 Corinthiens 2:12" (Localized TOB name if valid)
-        ref_display = item.get("ref", "")
-        typer.secho(f"{ref_display}", fg=typer.colors.GREEN, bold=True)
-        
-        # 2. Greek Text
-        greek_text = item.get("greek", "")
-        highlights = item.get("highlights", [])
-        
+
+    # Helper for highlighting
+    def apply_highlights(text: str, highlights: List[str]) -> str:
+        if not text or not highlights: return text
         for hw in highlights:
-            # Simple highlighting
-            styled = typer.style(hw, fg=typer.colors.RED, bold=True)
-            greek_text = greek_text.replace(hw, styled)
-            
-        typer.echo(greek_text)
+            try:
+                # Escape hw for regex
+                escaped_hw = re.escape(hw)
+                # Find all case-insensitive matches
+                def replacer(match):
+                    return typer.style(match.group(0), fg=typer.colors.RED, bold=True)
+                text = re.sub(escaped_hw, replacer, text, flags=re.IGNORECASE)
+            except Exception:
+                pass
+        return text
+
+    # Display Results
+    for item in response.results:
+        # Determine Header Name (Localized)
+        header_ref = f"{item.book_code} {item.chapter}:{item.verse}"
         
-        # 3. French Text
-        french_text = item.get("french", "")
-        if french_text:
-            version_label = bible.upper() if bible else "TOB"
+        # Use normalizer to localize header if possible
+        if service.normalizer:
+            bk = item.book_code
             
-            # Apply highlighting to French text
-            # Use same highlights list from worker (which contains the query)
-            # Use regex to replace case-insensitive matches while preserving original text casing
-            for hw in highlights:
-                try:
-                     # Escape hw for regex
-                     escaped_hw = re.escape(hw)
-                     # Find all case-insensitive matches
-                     # pattern = re.compile(escaped_hw, re.IGNORECASE)
-                     # re.sub with a function allows using original matched text
-                     
-                     def replacer(match):
-                         return typer.style(match.group(0), fg=typer.colors.RED, bold=True)
-                         
-                     french_text = re.sub(escaped_hw, replacer, french_text, flags=re.IGNORECASE)
-                except Exception:
-                    pass
+            # Determine if we should use French header
+            # Logic: If French search mode OR if French translation requested OR if -b used
+            # But here we don't have explicit 'mode' variable from service.
+            # We can infer from response? No.
+            # We rely on user args.
+            use_french = False
+            if bible in ['tob', 'bj']: use_french = True
+            if translations and 'fr' in [t.lower() for t in translations]: use_french = True
             
-            typer.secho(f"({version_label}) {french_text}", fg=typer.colors.CYAN)
+            # Also catch implicit french mode? (Latin script + no args = French?)
+            # Service handles that logic.
+            # If item.text matches french patterns? No.
+            # Let's simple check if bible arg was passed or translations has fr.
             
+            if use_french:
+                n1904 = service.normalizer.code_to_n1904.get(bk, bk)
+                tob_name = service.normalizer.n1904_to_tob.get(n1904)
+                if tob_name:
+                    header_ref = f"{tob_name} {item.chapter}:{item.verse}"
+            else:
+                 # English/Standard
+                 n1904 = service.normalizer.code_to_n1904.get(bk, bk)
+                 if n1904:
+                      header_ref = f"{n1904.replace('_', ' ')} {item.chapter}:{item.verse}"
+
+        typer.secho(f"{header_ref}", fg=typer.colors.GREEN, bold=True)
+        
+        # Main Text
+        main_text = item.text
+        if main_text:
+             main_text = apply_highlights(main_text, item.highlights)
+             typer.echo(main_text)
+        
+        # Translations
+        if item.translations:
+            # Sort for consistent display?
+            # Dict order is insertion order in py3.7+, but let's be safe if we want specific order.
+            # Service populates logic.
+            for code, text in item.translations.items():
+                typer.secho(f"({code}) {text}", fg=typer.colors.CYAN)
+
         typer.secho("-" * 40, fg=typer.colors.BRIGHT_BLACK)
         
-    if count > len(results):
-         typer.secho(f"... and {count - len(results)} more.", fg=typer.colors.YELLOW)
+    if response.total > len(response.results):
+         typer.secho(f"... and {response.total - len(response.results)} more.", fg=typer.colors.YELLOW)
 
     typer.echo("")
     
-    # Summary at end
+    # Summary
     typer.secho("─" * 60, fg=typer.colors.BRIGHT_BLACK)
     
-    # Show transformation if lemma differs from input
-    # Dynamic label: "Expression" if spaces in word, else "Lemma"
     label = "Expression" if " " in word.strip() else "Lemma"
     
-    if word != lemma:
-        if lemma_gloss:
-            typer.secho(f"{label}: {word} → {lemma} ({lemma_gloss})", fg=typer.colors.CYAN, bold=True)
+    if word != response.lemma:
+        if response.lemma_gloss:
+            typer.secho(f"{label}: {word} → {response.lemma} ({response.lemma_gloss})", fg=typer.colors.CYAN, bold=True)
         else:
-            typer.secho(f"{label}: {word} → {lemma}", fg=typer.colors.CYAN, bold=True)
+            typer.secho(f"{label}: {word} → {response.lemma}", fg=typer.colors.CYAN, bold=True)
     else:
-        if lemma_gloss:
-            typer.secho(f"{label}: {lemma} ({lemma_gloss})", fg=typer.colors.CYAN, bold=True)
+        if response.lemma_gloss:
+            typer.secho(f"{label}: {response.lemma} ({response.lemma_gloss})", fg=typer.colors.CYAN, bold=True)
         else:
-            typer.secho(f"{label}: {lemma}", fg=typer.colors.CYAN, bold=True)
+            typer.secho(f"{label}: {response.lemma}", fg=typer.colors.CYAN, bold=True)
     
-    typer.secho(f"Total occurrences: {count}", bold=True, fg=typer.colors.GREEN)
-
-
+    typer.secho(f"Total occurrences: {response.total}", bold=True, fg=typer.colors.GREEN)
 if __name__ == "__main__":
     import sys
     # Manual routing for default command

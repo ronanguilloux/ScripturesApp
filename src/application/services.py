@@ -2,7 +2,11 @@ import os
 import contextlib
 from typing import List, Optional, Tuple, Any, Dict
 from src.adapters.text_fabric_adapter import TextFabricAdapter
-from src.domain.models import VerseResponse, VerseCrossReferences, CrossReferenceRelation, VerseItem
+from src.domain.models import VerseResponse, VerseCrossReferences, CrossReferenceRelation, VerseItem, FindResponse, FindResultItem
+import sys
+import json
+import subprocess
+import re
 from src.book_normalizer import BookNormalizer
 from src.references_db import ReferenceDatabase
 from tf.app import use
@@ -506,4 +510,176 @@ class BibleService:
             reference=reference,
             verses=verses_data,
             cross_references=c_refs_model
+        )
+
+    def find(
+        self,
+        query: str,
+        limit: int = 20,
+        bible: Optional[str] = None,
+        version: Optional[str] = None,
+        translations: Optional[List[str]] = None
+    ) -> FindResponse:
+        
+        # Helper: Detect Greek Script
+        def is_greek_script(text: str) -> bool:
+            for char in text:
+                # Greek and Coptic (0370-03FF), Greek Extended (1F00-1FFF)
+                if '\u0370' <= char <= '\u03ff' or '\u1f00' <= char <= '\u1fff':
+                    return True
+            return False
+
+        is_greek = is_greek_script(query)
+        
+        # Determine Search Mode
+        mode = "greek"
+        search_corpus = "nt" # default Greek corpus
+        french_version = "tob" # default French version
+        
+        if bible:
+            french_version = bible.lower()
+            if french_version not in ["tob", "bj"]:
+                 raise ValueError(f"Invalid french version: {bible}. Use 'tob' or 'bj'.")
+
+        if is_greek:
+            # Greek Search Mode
+            mode = "greek"
+            if version:
+                if version.lower() not in ["nt", "lxx", "all", "at"]:
+                     raise ValueError(f"Invalid greek version: {version}. Use 'nt', 'lxx', 'all'.")
+                search_corpus = version.lower()
+                if search_corpus == "at": search_corpus = "lxx"
+            
+            # -b is allowed here, affects translation version only
+            
+        else:
+            # Latin Script
+            if bible:
+                # Explicit French Search
+                mode = "french"
+                search_corpus = french_version # 'tob' or 'bj'
+            elif version:
+                # Explicit Greek Search (Transliteration)
+                mode = "greek"
+                search_corpus = version.lower()
+                if search_corpus == "at": search_corpus = "lxx"
+            else:
+                # Ambiguous Latin - Default to French with error/hint?
+                # CLI raises Exit. Service should raise ValueError.
+                # However, typically API might try best effort or return 400.
+                raise ValueError(f"Ambiguous search for latin query '{query}'. Specify french_version (tob/bj) or greek version (nt/lxx).")
+
+        # Dispatch via Subprocess
+        # We need to locate workers relative to this file
+        # src/application/services.py -> src/application/workers/
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        workers_dir = os.path.join(current_dir, "workers")
+        project_root = os.path.dirname(os.path.dirname(current_dir)) # src/application -> src -> root
+        
+        if mode == "french":
+            worker_script = os.path.join(workers_dir, "french_worker.py")
+            cmd = [sys.executable, worker_script, query, "--bible", search_corpus, "--limit", str(limit)]
+            
+        else: # Greek
+            worker_script = os.path.join(workers_dir, "find_worker.py")
+            
+            # Try to use spacy venv if exists
+            venv_python = os.path.join(project_root, ".venv-spacy", "bin", "python3")
+            if not os.path.exists(venv_python):
+                 venv_python = sys.executable
+                 
+            cmd = [venv_python, worker_script, query, "--limit", str(limit), "--corpus", search_corpus]
+
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True)
+        except Exception as e:
+            raise RuntimeError(f"Error running worker: {e}")
+            
+        if result.returncode != 0:
+            raise RuntimeError(f"Worker failed: {result.stderr}")
+            
+        try:
+            output = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            raise RuntimeError(f"Invalid output from worker: {result.stdout}")
+
+        # Process Results
+        lemma = output.get("lemma", query)
+        count = output.get("total", 0)
+        lemma_gloss = output.get("lemma_gloss", "")
+        raw_results = output.get("results", [])
+        
+        final_results = []
+        
+        # Helper for highlighting
+        def apply_highlights(text: str, highlights: List[str]) -> str:
+            if not text or not highlights: return list(highlights) # Service returns list of words? 
+            # Wait, API should return text and list of highlight words.
+            # Client does drawing.
+            # BUT: CLI does highlighting in text.
+            # API Spec said: highlights: List[str]
+            # So we return the LIST of words to highlight.
+            # We DONT modify the text with ANSI codes here.
+            # CLI modified text. API keeps data clean.
+            return list(highlights)
+
+        for item in raw_results:
+            # item: {ref, book_code, chapter, verse, greek, french, highlights}
+            # We need to construct FindResultItem
+            
+            # Fetch Translations if requested
+            # Re-use logic from search?
+            # Or just fetch specific verses.
+            
+            b = item.get("book_code")
+            c = item.get("chapter")
+            v = item.get("verse")
+            
+            # Main Text
+            # For Greek mode: greek
+            # For French mode: french
+            main_text = item.get("greek") or item.get("french") or ""
+            
+            # Gather Translations
+            translations_map = {}
+            if translations:
+                # Determine versions to fetch
+                # Logic from search...
+                
+                # We need is_nt for defaults
+                is_nt = self.normalizer.is_nt(b)
+                
+                for t in translations:
+                     t_code = t.lower()
+                     v_code = None
+                     if t_code == 'en': v_code = 'N1904_EN'
+                     elif t_code == 'fr': v_code = (french_version or 'tob').upper()
+                     elif t_code == 'gr': v_code = 'N1904' if is_nt else 'LXX'
+                     elif t_code == 'hb': v_code = 'BHSA' 
+                     elif t_code in ['tob', 'bj', 'nav', 'lxx', 'bhsa', 'n1904']: v_code = t_code.upper()
+                     
+                     if v_code:
+                         # Fetch
+                         try:
+                             p_v = self.adapter.get_verse(b, c, v, version=v_code)
+                             if p_v:
+                                 translations_map[v_code] = p_v.text
+                         except: pass
+
+            final_results.append(FindResultItem(
+                ref=item.get("ref"),
+                book_code=b,
+                chapter=c,
+                verse=v,
+                text=main_text,
+                translations=translations_map,
+                highlights=item.get("highlights", [])
+            ))
+
+        return FindResponse(
+            lemma=lemma,
+            original=query,
+            lemma_gloss=lemma_gloss,
+            total=count,
+            results=final_results
         )

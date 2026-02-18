@@ -86,60 +86,85 @@ def test_perform_search_accents():
 from typer.testing import CliRunner
 from unittest.mock import patch, MagicMock
 from src.cli import app
+from src.domain.models import FindResponse, FindResultItem
 import json
 import sys
 
 runner = CliRunner()
 
 def test_cli_find_french_tob():
-    # Mock subprocess.run to return a valid JSON response from worker
-    mock_output = {
-        "lemma": "élie", 
-        "total": 1, 
-        "results": [
-            {"ref": "1 Rois 17:1", "book_code": "1 Rois", "chapter": 17, "verse": 1, "french": "Elie, le Tishbite...", "highlights": ["élie"]}
+    # Mock BibleService
+    mock_response = FindResponse(
+        lemma="élie",
+        original="élie", 
+        lemma_gloss="",
+        total=1,
+        results=[
+            FindResultItem(
+                ref="1 Rois 17:1", 
+                book_code="1 Rois", 
+                chapter=17, 
+                verse=1, 
+                text="Elie, le Tishbite...", 
+                highlights=["élie"]
+            )
         ]
-    }
+    )
     
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0, stdout=json.dumps(mock_output), stderr="")
-        
+    with patch("src.application.services.BibleService") as MockService:
+        mock_instance = MockService.return_value
+        mock_instance.find.return_value = mock_response
+        mock_instance.normalizer = None # Mock normalizer access if needed
+
         result = runner.invoke(app, ["find", "élie", "-b", "tob"])
         
         assert result.exit_code == 0
-        assert "Searching for 'élie' in TOB..." in result.stdout
+        # "Searching for..." message is removed in new CLI
         assert "1 Rois 17:1" in result.stdout
-        assert "(TOB) Elie, le Tishbite..." in result.stdout
+        assert "Elie, le Tishbite..." in result.stdout
         
         # Verify calls
-        mock_run.assert_called_once()
-        args = mock_run.call_args[0][0]
-        # args should be [sys.executable, /path/to/french_worker.py, "élie", "--bible", "tob", "--limit", "20"]
-        assert args[0] == sys.executable
-        assert "french_worker.py" in args[1]
-        assert args[2] == "élie"
-        assert args[4] == "tob"
+        mock_instance.find.assert_called_once_with(
+            query="élie",
+            limit=20, # default
+            bible="tob",
+            version=None,
+            translations=None
+        )
 
 def test_cli_find_french_bj_upper():
     # Test case insensitivity of CLI arg
-    mock_output = {"lemma": "test", "total": 0, "results": []}
+    mock_response = FindResponse(
+        lemma="test",
+        original="test", 
+        lemma_gloss="",
+        total=0,
+        results=[]
+    )
     
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0, stdout=json.dumps(mock_output), stderr="")
+    with patch("src.application.services.BibleService") as MockService:
+        mock_instance = MockService.return_value
+        mock_instance.find.return_value = mock_response
         
         result = runner.invoke(app, ["find", "test", "-b", "BJ"])
         
         assert result.exit_code == 0
-        assert "Searching for 'test' in BJ..." in result.stdout
+        assert "No occurrences found for 'test'." in result.stdout
         
-        args = mock_run.call_args[0][0]
-        assert args[4] == "bj" # Should be lowercased by logic? 
-        # Actually logic says: bible_version = bible.lower()
-        # So yes.
+        # Verify calls
+        mock_instance.find.assert_called_once()
+        call_args = mock_instance.find.call_args[1]
+        assert call_args["bible"] == "BJ" # Helper passes it raw? Or lower? CLI passes raw. Service handles lower.
 
 def test_cli_find_invalid_bible():
-    result = runner.invoke(app, ["find", "test", "-b", "invalid"])
-    assert result.exit_code == 1
-    assert "Invalid bible version: invalid" in result.stdout
-
-
+    # BibleService.find raises ValueError for invalid inputs if logic is there.
+    # But checking CLI arg validation logic.
+    # In new CLI, we pass args to service. Service raises ValueError.
+    
+    with patch("src.application.services.BibleService") as MockService:
+        mock_instance = MockService.return_value
+        mock_instance.find.side_effect = ValueError("Invalid french version: invalid. Use 'tob' or 'bj'.")
+        
+        result = runner.invoke(app, ["find", "test", "-b", "invalid"])
+        assert result.exit_code == 1
+        assert "Invalid french version: invalid. Use 'tob' or 'bj'." in result.stdout

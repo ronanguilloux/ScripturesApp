@@ -58,21 +58,31 @@ ine interface for the Greek
             Search for specific terms in the       
  texts.                                            
                                                    
-            Arguments:                             
-            QUERY:     Greek word (Lemma or        
- Surface form) or French expression.               
-                                                   
-            Options:                               
-            -b, --bible:  Search in French         
- translation (tob, bj).                            
-                          Default: Greek (N1904).  
-                                                   
-            --limit, -k:  Max results (def: 20).   
-                                                   
-            Examples:                              
-            biblecli find "ἀγαπάω"                 
-            biblecli find "Dieu" -b tob            
-            biblecli find "Fils de l'homme" -b bj                                              
+            Arguments:
+            QUERY:     Greek word (Lemma or
+                       Surface form) or French
+                       expression. (Script
+                       auto-detected).
+
+            Options:
+            -v, --version: Greek Corpus (nt,
+                           lxx, all).
+                           Default: nt.
+            -b, --bible:   French Version (tob,
+                           bj).
+                           Required for French
+                           search.
+            -tr, --tr, -t: Translations to show
+                           (en, fr, gr, hb, ar).
+
+            --limit, -k:  Max results (def: 20).
+
+            Examples:
+            biblecli find "λόγος"                  # Greek NT
+            biblecli find "ἀρχή" -v lxx            # Greek LXX
+            biblecli find "Dieu" -b tob            # French TOB
+            biblecli find "λόγος" -tr fr           # Greek + French
+            biblecli find "λόγος" -tr fr en -v lxx # Complex                                              
                                                    
  SHORTCUTS                                         
      tob [REFERENCE]                               

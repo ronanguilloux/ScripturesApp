@@ -90,10 +90,14 @@ struct FindResponse: Codable {
 }
 
 // MARK: - FindResultItem
+// MARK: - FindResultItem
 struct FindResultItem: Codable, Identifiable {
     var id: String { ref }
     let ref: String
-    let greek: String
-    let french: String
+    let book_code: String
+    let chapter: Int
+    let verse: Int
+    let text: String
+    let translations: [String: String]
     let highlights: [String]
 }

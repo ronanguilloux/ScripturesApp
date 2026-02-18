@@ -233,30 +233,40 @@ This will automatically create/update `data/references_nt_personal.json`.
 
 The `find` command allows you to search for words or expressions in the texts.
 
-#### Greek Search (Default)
+### Search (Concordance)
 
-Find all occurrences of a specific Greek word in the N1904 New Testament.
-Supports both **Lemma** (Dictionary Form) and **Surface Form** (Exact Word) search.
+The `find` command allows you to search for words or expressions in the texts.
 
-**Enhanced Lemmatization**: Uses **OdyCy** (Ancient Greek spaCy) with 9,710 corpus-derived corrections for **93% accuracy** on complex forms including monotonic/unaccented input (`λαμβανω`), perfect participles (`εἰλημμένων`), suppletive stems (`λήψομαι`), and compounds (`ἀπολάβῃ`).
+**Smart Script Detection**:
+The command automatically detects whether you are searching for Greek (e.g., "λόγος") or Latin/French (e.g., "Dieu") text and routes the search accordingly.
 
-> **Why This Matters**: The lemmatization uses a **corpus-wide alignment** (9,677 corrections covering all 19,513 unique N1904 forms) rather than word-specific patches. This means the system automatically handles **any Greek word in the New Testament** with ~90% real-world accuracy.
+#### Greek Search
+Triggered by Greek characters or explicitly via `-v`.
 
-**Find by Lemma:**
+**Find by Lemma (Dictionary Form):**
 Find all forms of a word (e.g. "to love").
 ```sh
-biblecli find "ἀγαπάω"
+biblecli find "ἀγαπάω" # Searches Greek NT by default
 ```
 
-**Find by Surface Form:**
-Find a specific inflected form (e.g. "Little children").
+**Find in Septuagint (LXX):**
 ```sh
-biblecli find "Τεκνία"
+biblecli find "ἀρχή" -v lxx
+```
+
+**Find in All Greek Corpora (NT + LXX):**
+```sh
+biblecli find "καί" -v all
+```
+
+**With Translations:**
+Display the search result with parallel translations (e.g. French BJ and English).
+```sh
+biblecli find "λόγος" -tr fr en -b bj
 ```
 
 #### French Search (TOB / BJ)
-
-You can search for exact words or expressions in the French translations (TOB or BJ) using the `--bible` or `-b` flag.
+Triggered by Latin characters + `-b` flag.
 
 **Features:**
 - **Case-insensitive**: "Dieu", "dieu", "DIEU" match correctly.
@@ -274,7 +284,7 @@ biblecli find "Fils de l'homme" -b bj
 ```
 
 **Output:**
-Matches are **highlighted in RED** in the terminal.
+Matches are **highlighted in RED** in the source text.
 ```text
 [Matthieu 8:20]
 (BJ) ... le Fils de l'homme, lui, n'a pas où reposer la tête.
@@ -327,6 +337,7 @@ This project exposes a JSON API to serve native applications.
 -   **Run Server**:
     ```bash
     uvicorn src.api.main:app
+    
     ```
 -   **Endpoint**: `GET /api/v1/search`
 

@@ -83,4 +83,26 @@ class SearchResult(BaseModel):
     chapter: int
     verse: int
 
+    model_config = ConfigDict(frozen=True)
+
+class FindResultItem(BaseModel):
+    ref: str = Field(..., description="Verse reference (e.g. 'Mt 1:1')")
+    book_code: str = Field(..., description="Standard book code")
+    chapter: int
+    verse: int
+    text: str = Field(..., description="Main text content (Greek or French)")
+    translations: Dict[str, str] = Field(default_factory=dict, description="Parallel translations")
+    highlights: List[str] = Field(default_factory=list, description="Words to highlight in the main text")
+    
+    model_config = ConfigDict(frozen=True)
+
+class FindResponse(BaseModel):
+    lemma: str = Field(..., description="The query lemma or expression")
+    original: str = Field(..., description="The original query string")
+    lemma_gloss: str = Field(default="", description="Gloss/Definition of the lemma")
+    total: int = Field(..., description="Total number of results found")
+    results: List[FindResultItem] = Field(default_factory=list)
+    
+    model_config = ConfigDict(frozen=True)
+
 
