@@ -10,7 +10,7 @@ Example: Display a verse with
 - plus the French TOB:
 
 ```sh
-biblecli "Gn 1:1-3" --tr fr gr hb ar -k
+biblecli "Gn 1:1-3" --tr fr --tr gr --tr hb --tr ar -k
 ```
 
 Output:
@@ -87,7 +87,7 @@ Display a New Testament verse from
 - Greek New Testament (Nestle 1904),
 - and Berean Interlinear Bible (English translation):
 ```sh
-biblecli "Mk 1:1" --tr en gr
+biblecli "Mk 1:1" --tr en --tr gr
 ```
 
 Output:
@@ -138,7 +138,26 @@ biblecli "Gen 1:1" --tr ar
 
 Show both English, French and ancient Greek:
 ```sh
-biblecli "Jn 3:16" -t en fr gr
+biblecli "Jn 3:16" -t en -t fr -t gr
+```
+
+### Lifecycle Management (App & Server)
+
+The CLI can manage the full application stack (API Server + macOS App).
+
+start the services (builds and runs the App):
+```sh
+biblecli start
+```
+
+Stop the services:
+```sh
+biblecli stop
+```
+
+Restart the services:
+```sh
+biblecli restart
 ```
 
 ### Cross-references
@@ -262,7 +281,7 @@ biblecli find "καί" -v all
 **With Translations:**
 Display the search result with parallel translations (e.g. French BJ and English).
 ```sh
-biblecli find "λόγος" -tr fr en -b bj
+biblecli find "λόγος" -t fr -t en -b bj
 ```
 
 #### French Search (TOB / BJ)
@@ -407,7 +426,7 @@ The lazy loading logic consists in loading the minimal number of datasets based 
 - Query `Mc 1:1` without flags -> Loads `N1904` and `TOB`. Skips `BHSA`.
 - Query `Mc 1:1 --tr fr` -> Loads `TOB` only. Skips `N1904` and `BHSA`.
 - Query `Mc 1:1 --tr en` -> Loads `N1904` (for English glosses) only. Skips `TOB` and `BHSA`.
-- Query `Mc 1:1 --tr en fr` -> Loads `N1904` and `TOB`. Skips `BHSA`.
+- Query `Mc 1:1 --tr en --tr fr` -> Loads `N1904` and `TOB`. Skips `BHSA`.
 
 ### Key Achievements
 
@@ -442,7 +461,7 @@ Measured using reference: **Gn 1:1**
 | `tob "Gn 1:1"` (Default) | **~3.5s** | Balanced load (LXX + BHSA + TOB) |
 | `tob "Gn 1:1" --tr fr` | **~1.0s** | Fast French lookup (Loads TOB only) |
 | `tob "Gn 1:1" --tr hb` | **~3.2s** | Loads BHSA |
-| `tob "Gn 1:1" --tr en fr gr hb` | **~6.5s** | Full load (System overhead) |
+| `tob "Gn 1:1" --tr en --tr fr --tr gr --tr hb` | **~6.5s** | Full load (System overhead) |
 
 **Key Findings:**
 - **Baseline**: ~3.0-3.4s startup time for NT.

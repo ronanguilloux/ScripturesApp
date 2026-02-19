@@ -70,6 +70,7 @@ def test_readme_commands():
         if "git clone" in cmd: continue
         if "export PATH" in cmd: continue
         if "add -c" in cmd: continue # Skipping 'add' commands as they modify state/files
+        if "biblecli start" in cmd or "biblecli stop" in cmd or "biblecli restart" in cmd: continue
         
         # Execute
         print(f"Testing README command: {cmd}")

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ScripturesApp API",
-    "description": "Backend for BibleCLI Native App",
+    "description": "Backend for ScripturesApp Native App",
     "version": "1.0.0"
   },
   "paths": {
@@ -155,6 +155,117 @@
           }
         }
       }
+    },
+    "/api/v1/find": {
+      "get": {
+        "summary": "Find Words",
+        "description": "Find occurrences of a word or expression.\nDetects script (Greek vs Latin) to determine search mode.",
+        "operationId": "find_words_api_v1_find_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Search query (Greek word or French expression)",
+              "title": "Q"
+            },
+            "description": "Search query (Greek word or French expression)"
+          },
+          {
+            "name": "tr",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Translations to show (en, fr, gr, hb, ar)",
+              "title": "Tr"
+            },
+            "description": "Translations to show (en, fr, gr, hb, ar)"
+          },
+          {
+            "name": "v",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Greek Corpus (nt, lxx, all)",
+              "title": "V"
+            },
+            "description": "Greek Corpus (nt, lxx, all)"
+          },
+          {
+            "name": "bible",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "French version (tob, bj)",
+              "title": "Bible"
+            },
+            "description": "French version (tob, bj)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Max results",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Max results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -164,6 +275,17 @@
           "target_ref": {
             "type": "string",
             "title": "Target Ref"
+          },
+          "target_ref_localized": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Ref Localized"
           },
           "rel_type": {
             "$ref": "#/components/schemas/CrossReferenceType"
@@ -207,6 +329,97 @@
           "other"
         ],
         "title": "CrossReferenceType"
+      },
+      "FindResponse": {
+        "properties": {
+          "lemma": {
+            "type": "string",
+            "title": "Lemma",
+            "description": "The query lemma or expression"
+          },
+          "original": {
+            "type": "string",
+            "title": "Original",
+            "description": "The original query string"
+          },
+          "lemma_gloss": {
+            "type": "string",
+            "title": "Lemma Gloss",
+            "description": "Gloss/Definition of the lemma",
+            "default": ""
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of results found"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/FindResultItem"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lemma",
+          "original",
+          "total"
+        ],
+        "title": "FindResponse"
+      },
+      "FindResultItem": {
+        "properties": {
+          "ref": {
+            "type": "string",
+            "title": "Ref",
+            "description": "Verse reference (e.g. 'Mt 1:1')"
+          },
+          "book_code": {
+            "type": "string",
+            "title": "Book Code",
+            "description": "Standard book code"
+          },
+          "chapter": {
+            "type": "integer",
+            "title": "Chapter"
+          },
+          "verse": {
+            "type": "integer",
+            "title": "Verse"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Main text content (Greek or French)"
+          },
+          "translations": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Translations",
+            "description": "Parallel translations"
+          },
+          "highlights": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Highlights",
+            "description": "Words to highlight in the main text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "book_code",
+          "chapter",
+          "verse",
+          "text"
+        ],
+        "title": "FindResultItem"
       },
       "HTTPValidationError": {
         "properties": {
@@ -255,6 +468,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",
@@ -289,6 +509,17 @@
           "version": {
             "type": "string",
             "title": "Version"
+          },
+          "book_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Name"
           },
           "node": {
             "anyOf": [

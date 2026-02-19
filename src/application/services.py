@@ -683,3 +683,37 @@ class BibleService:
             total=count,
             results=final_results
         )
+
+    def greek_analysis(self, text: str) -> List[Dict[str, Any]]:
+        """
+        Perform deep NLP analysis on Greek text using OdyCy.
+        """
+        # Dispatch via Subprocess
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        workers_dir = os.path.join(current_dir, "workers")
+        project_root = os.path.dirname(os.path.dirname(current_dir)) 
+        
+        worker_script = os.path.join(workers_dir, "greek_worker.py")
+        
+        # Try to use spacy venv if exists
+        venv_python = os.path.join(project_root, ".venv-spacy", "bin", "python3")
+        if not os.path.exists(venv_python):
+             venv_python = sys.executable
+             
+        cmd = [venv_python, worker_script, text]
+
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True)
+        except Exception as e:
+            raise RuntimeError(f"Error running worker: {e}")
+            
+        if result.returncode != 0:
+            raise RuntimeError(f"Worker failed: {result.stderr}")
+            
+        try:
+            output = json.loads(result.stdout)
+            if isinstance(output, dict) and "error" in output:
+                raise RuntimeError(output["error"])
+            return output
+        except json.JSONDecodeError:
+            raise RuntimeError(f"Invalid output from worker: {result.stdout}")

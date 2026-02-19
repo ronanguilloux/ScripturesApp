@@ -77,12 +77,8 @@ def load_alignment_map():
             with open(map_path, "r") as f:
                 _alignment_map = json.load(f)
         
-        # Hardcoded overrides for known regressions/edge cases not in JSON
-        overrides = {
-            "ειληφα": "λαμβάνω", # Perfect participle
-            "είληφα": "λαμβάνω",
-        }
-        _alignment_map.update(overrides)
+        # overrides removed as per user request
+        # _alignment_map.update(overrides)
                  
         return _alignment_map
     except Exception as e:
@@ -353,7 +349,8 @@ def find_in_index(lemma: str, original_word: str, corpus: str, limit: int):
         # OdyCy tokens have .lemma_ property.
         # We just check if token.lemma_ == lemma OR token.text == original_word
         
-        target_lemmas = {lemma}
+        # Normalize everything to NFC to handle Oxia/Tonos differences
+        target_lemmas = {unicodedata.normalize('NFC', lemma)}
         # Also check for exact surface match (normalized)
         target_surfaces = {unicodedata.normalize('NFC', original_word), unicodedata.normalize('NFC', lemma)}
         
@@ -363,8 +360,11 @@ def find_in_index(lemma: str, original_word: str, corpus: str, limit: int):
             
             highlights = set()
             for token in doc:
+                # Normalize token lemma
+                token_lemma_norm = unicodedata.normalize('NFC', token.lemma_)
+                
                 # Check lemma match
-                if token.lemma_ in target_lemmas:
+                if token_lemma_norm in target_lemmas:
                     highlights.add(token.text)
                     continue
                 
@@ -372,15 +372,26 @@ def find_in_index(lemma: str, original_word: str, corpus: str, limit: int):
                 if token.text in target_surfaces:
                     highlights.add(token.text)
                     continue
-                    
-                # Strict accent fallback?
-                # If we really want to be sure, check stripped forms.
-                # But OdyCy should handle it.
+            
+            # Fallback: Simple accent-insensitive highlighting if OdyCy misses it
+            # This handles cases where OdyCy lemma might differ slightly or normalization/tokenization issues
+            if not highlights:
+                words = text.split()
+                # Create stripped set of targets for comparison
+                stripped_targets = {GreekNormalizer.strip_accents(t) for t in target_lemmas | target_surfaces}
+                # Also add the stripped search term itself just in case
+                stripped_targets.add(GreekNormalizer.strip_accents(original_word))
+                
+                for w in words:
+                    w_clean = w.strip().rstrip(",.;·")
+                    w_stripped = GreekNormalizer.strip_accents(w_clean)
+                    if w_stripped in stripped_targets:
+                        highlights.add(w_clean)
                 
             res["highlights"] = list(highlights)
             
     except Exception as e:
-        # Fallback to simple accent-insensitive highlighting if OdyCy fails
+        # Fallback to simple accent-insensitive highlighting if OdyCy execution fails
         sys.stderr.write(f"Highlighting error: {e}\n")
         # Reuse previous logic
         stripped_search_terms = {GreekNormalizer.strip_accents(t) for t in search_terms}
@@ -403,22 +414,11 @@ def find_in_index(lemma: str, original_word: str, corpus: str, limit: int):
         "results": final_results
     }
 
-def main():
-    parser = argparse.ArgumentParser(description="OdyCy-powered Greek lemma search")
-    parser.add_argument("word", help="Greek word to search for")
-    parser.add_argument("--limit", type=int, default=20, help="Max results")
-    parser.add_argument("--corpus", choices=["nt", "lxx", "all"], default="nt", help="Search corpus")
-    args = parser.parse_args()
-    
-    word = args.word
-    
-    # 1. Smart Lemmatize (OdyCy + Alignment + Restore)
-    # We need logic from previous `smart_lemmatize`.
-    # But `smart_lemmatize` used TF adapter.
-    # We can perform OdyCy + Alignment easily.
-    # Restoration (finding polytonic forms) used TF index.
-    # We can replicate "stripped index" if we want, but for now let's stick to OdyCy + Alignment.
-    
+def find_lemma(word: str) -> str:
+    """
+    Find lemma using OdyCy, Alignment Map, and Heuristics.
+    Does NOT use TF indices for fallback (that happens in main/search phase).
+    """
     # Load alignment
     alignment = load_alignment_map()
     
@@ -436,14 +436,41 @@ def main():
     elif alignment and lemma in alignment:
         lemma = alignment[lemma]
         
+    # Heuristic: Classical vs Koine Spelling (ψ vs μψ) for unaligned words
+    # If lemma is still same as word (likely failure) OR we want to be robust
+    if alignment and lemma == word:
+         if "ψ" in word or "Ψ" in word:
+             var = word.replace("ψ", "μψ").replace("Ψ", "Μψ")
+             # Check if variation is in alignment
+             if var in alignment:
+                 lemma = alignment[var]
+             else:
+                 # Try lemmatizing variation
+                 var_lemma = lemmatize(var)
+                 if var_lemma != var: # If variation lemmatized to something else
+                      lemma = var_lemma
+                      if alignment and lemma in alignment:
+                          lemma = alignment[lemma]
+    return lemma
+
+def main():
+    parser = argparse.ArgumentParser(description="OdyCy-powered Greek lemma search")
+    parser.add_argument("word", help="Greek word to search for")
+    parser.add_argument("--limit", type=int, default=20, help="Max results")
+    parser.add_argument("--corpus", choices=["nt", "lxx", "all"], default="nt", help="Search corpus")
+    args = parser.parse_args()
+    
+    word = args.word
+    
+    # 1. Find Lemma
+    lemma = find_lemma(word)
+        
     # Search
     # Fallback: if lemma not found in NT index, but original word IS a lemma in NT index, use original word
     # This covers cases where OdyCy fails on dictionary forms (e.g. λαμβάνω -> λαμβανω)
     nt_index = load_index("NT")
     if nt_index:
         lemmas_map = nt_index["lemmas"]
-        # If current lemma not found, but input word IS a valid lemma, use input word
-        # Normalize input word first
         word_norm = unicodedata.normalize('NFC', word)
         lemma_norm = unicodedata.normalize('NFC', lemma)
         

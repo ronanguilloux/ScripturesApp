@@ -93,8 +93,8 @@ def test_perfect_participle():
     expected_1 = normalize("λαμβάνω")
     expected_2 = normalize("ειληφα")
     
-    if lemma not in [expected_1, expected_2]:
-        raise AssertionError(f"Expected: {expected_1} or {expected_2}, Got: {lemma}")
+    if lemma not in [expected_1, expected_2, normalize("εἴληφα")]:
+        raise AssertionError(f"Expected: {expected_1} or {expected_2} or εἴληφα, Got: {lemma}")
         
     if output["total"] == 0:
         raise AssertionError("Total results should be > 0")

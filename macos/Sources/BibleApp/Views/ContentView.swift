@@ -46,6 +46,49 @@ struct ContentView: View {
                             dragStartSize = nil
                         }
                 )
+            
+            // Restart Button (Top Right)
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: restartApp) {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(8)
+                    .help("Restart App & Server")
+                }
+                Spacer()
+            }
+        }
+    }
+    
+    func restartApp() {
+        let task = Process()
+        task.launchPath = "/bin/bash"
+        // We need to find biblecli. 
+        // Assuming it's in the project bin logic or installed in path.
+        // Let's try matching the behavior of the python script:
+        // The app is likely running from derived data or .build
+        // Getting the project root is tricky from sandbox/build.
+        // But for this user env, `biblecli` command should be available if they sourced it?
+        // Or we can try to find absolute path.
+        // Let's assume `biblecli` is in the path or use a hardcoded path for this user context since we know it.
+        // User's biblecli is at /Users/ronan/Documents/Gemini/antigravity/ScripturesApp/bin/biblecli
+        
+        let cliPath = "/Users/ronan/Documents/Gemini/antigravity/ScripturesApp/bin/biblecli"
+        
+        task.arguments = ["-c", "\(cliPath) restart --detach"]
+        
+        do {
+            try task.run()
+            // We don't need to exit explicitly, the restart command will kill us.
+            // But to be sure we don't block the restart:
+            // Actually `biblecli restart` kills the app process.
+        } catch {
+            print("Failed to restart: \(error)")
         }
     }
 }

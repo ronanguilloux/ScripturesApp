@@ -103,6 +103,24 @@ struct FindView: View {
             }
             .padding(10)
             .background(Color(NSColor.windowBackgroundColor)) // Slightly different bg for header area?
+            .onChange(of: selectedTranslations) { _ in
+                // Auto-trigger search when translations change
+                if !searchText.isEmpty {
+                   performFind()
+                }
+            }
+            .onChange(of: selectedVersion) { _ in
+                // Auto-trigger search when corpus changes
+                if !searchText.isEmpty {
+                   performFind()
+                }
+            }
+            .onChange(of: selectedBible) { _ in
+                // Auto-trigger search when french bible version changes
+                if !searchText.isEmpty {
+                   performFind()
+                }
+            }
             
             Divider()
             
@@ -282,7 +300,7 @@ struct HighlightedText: View {
         if highlights.isEmpty {
             Text(text)
         } else {
-            // Create attributed string with highlights
+            // Create attributed string with robust highlighting
             Text(attributedText())
         }
     }
@@ -291,10 +309,10 @@ struct HighlightedText: View {
         var attrString = AttributedString(text)
         
         for highlight in highlights {
-            // Find all ranges of this highlight
+            // Find all ranges of this highlight using case and diacritic insensitivity
             var searchRange = attrString.startIndex..<attrString.endIndex
             
-            while let range = attrString[searchRange].range(of: highlight) {
+            while let range = attrString[searchRange].range(of: highlight, options: [.caseInsensitive, .diacriticInsensitive]) {
                 attrString[range].foregroundColor = .red
                 attrString[range].font = .body.bold()
                 

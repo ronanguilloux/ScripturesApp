@@ -72,7 +72,7 @@ ine interface for the Greek
                            bj).
                            Required for French
                            search.
-            -tr, --tr, -t: Translations to show
+            -t, --tr:      Translations to show
                            (en, fr, gr, hb, ar).
 
             --limit, -k:  Max results (def: 20).
@@ -81,8 +81,8 @@ ine interface for the Greek
             biblecli find "λόγος"                  # Greek NT
             biblecli find "ἀρχή" -v lxx            # Greek LXX
             biblecli find "Dieu" -b tob            # French TOB
-            biblecli find "λόγος" -tr fr           # Greek + French
-            biblecli find "λόγος" -tr fr en -v lxx # Complex                                              
+            biblecli find "λόγος" -t fr           # Greek + French
+            biblecli find "λόγος" -t fr -t en -v lxx   # Complex                                              
                                                    
  SHORTCUTS                                         
      tob [REFERENCE]                               
@@ -143,11 +143,11 @@ ine interface for the Greek
  classic Treasury of Scripture Knowledge (TSK)     
                                                    
  EXAMPLES                                          
-     biblecli "Jn 3:16" -t en fr gr                
+     biblecli "Jn 3:16" -t en -t fr -t gr                
             Show John 3:16 in English, French, and 
  Greek.                                            
                                                    
-     biblecli "Gn 1:1" --tr hb gr                  
+     biblecli "Gn 1:1" --tr hb --tr gr                  
             Show Genesis 1:1 in Hebrew and Greek   
  Septuagint.                                       
                                                    

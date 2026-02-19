@@ -35,7 +35,17 @@ class ServerManager: ObservableObject {
 
     private var serverProcess: Process?
     
+    // Check if server is managed externally (e.g. by biblecli start)
+    private var isManaged: Bool {
+        return ProcessInfo.processInfo.environment["BIBLE_APP_SERVER_MANAGED"] == "true"
+    }
+    
     func startServer() {
+        if isManaged {
+            print("Server is managed externally. Skipping start.")
+            return
+        }
+        
         guard serverProcess == nil else {
             print("Server already running (managed)")
             return
@@ -79,11 +89,19 @@ class ServerManager: ObservableObject {
     }
     
     func stopServer() {
+        if isManaged {
+            print("Server is managed externally. Skipping stop.")
+            return
+        }
         serverProcess?.terminate()
         serverProcess = nil
     }
     
     func killExistingServer() {
+        if isManaged {
+            print("Server is managed externally. Skipping kill.")
+            return
+        }
         // Kill uvicorn process by name (development only)
         let task = Process()
         task.launchPath = "/usr/bin/pkill"
@@ -93,6 +111,10 @@ class ServerManager: ObservableObject {
     }
     
     func restartServer() {
+        if isManaged {
+            print("Server is managed externally. Skipping restart.")
+            return
+        }
         print("Restarting server...")
         stopServer() // Stop managed
         killExistingServer() // Stop any legacy/zombie

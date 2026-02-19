@@ -63,6 +63,9 @@ def test_aggregation(setup_repro_files):
     cmd = ["bin/biblecli", "Gen 1:1", "-c"]
     result = subprocess.run(cmd, capture_output=True, text=True)
     
+    print(f"STDOUT: {result.stdout}")
+    print(f"STDERR: {result.stderr}")
+    
     assert result.returncode == 0
     assert "Source A Note" in result.stdout
     assert "Source B Note" in result.stdout
