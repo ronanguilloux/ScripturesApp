@@ -301,14 +301,16 @@ def add_cli(
 
 @app.command()
 def find(
-    word: Annotated[str, typer.Argument(help="Search query (Greek word or French expression)")],
+    word: Annotated[str, typer.Argument(help="Search query (Greek word or French expression), or 'septantism'")],
     limit: Annotated[int, typer.Option("--limit", "-k", help="Number of results to show")] = 20,
     bible: Annotated[Optional[str], typer.Option("--bible", "-b", help="French Version (tob, bj)")] = None,
     version: Annotated[Optional[str], typer.Option("--version", "-v", help="Greek Corpus (nt, lxx, all)")] = None,
     translations: Annotated[Optional[List[str]], typer.Option("--tr", "-tr", "-t", help="Translations to show (en, fr, gr, hb)")] = None,
+    in_book: Annotated[Optional[str], typer.Option("--in", "-i", help="Book abbreviation (e.g., Mc) for septantism search")] = None,
+    simil: Annotated[bool, typer.Option("--simil", help="Sort septantisms by similarity percentage (descending)")] = False,
 ):
     """
-    Find occurrences of a word or expression.
+    Find occurrences of a word or expression, or discover Septantisms.
     
     Automatically detects script (Greek vs Latin) to determine search mode.
     
@@ -322,12 +324,16 @@ def find(
        - Searches in French translations (TOB/BJ).
        - Requires -b [tob|bj].
 
+    3. Septantism Search:
+       - Detects shared Greek lemmas between NT verses and OT cross-references.
+       - Requires `septantism` as the word and `-i` [Book] (e.g. `biblecli find septantism -i Mc`).
+       - Use `--simil` to sort results by scientific Jaccard similarity instead of biblical order.
+
     Examples:
         biblecli find "λόγος"                  # Greek NT search
         biblecli find "ἀρχή" -v lxx             # Greek LXX search
         biblecli find "Dieu" -b tob            # French TOB search
-        biblecli find "λόγος" -tr fr           # Greek search + French translation
-        biblecli find "λόγος" -tr fr en -v lxx # Greek LXX search + Translations
+        biblecli find septantism -i Mc         # Find Septantisms in Mark
     """
     from src.application.services import BibleService
     import sys
@@ -340,7 +346,94 @@ def find(
         raise typer.Exit(code=1)
 
     try:
-        # Call Service
+        if word.lower() == "septantism":
+            if not in_book:
+                typer.secho("Error: --in [-i] book abbreviation is required for septantism search (e.g. -i Mc)", fg=typer.colors.RED)
+                raise typer.Exit(code=1)
+                
+            french_v = None
+            if translations and "fr" in [t.lower() for t in translations]:
+                french_v = bible if bible else "tob"
+                
+            typer.echo(f"Scanning {in_book} for Septantisms in OT cross-references... (this may take a minute)")
+            results = service.find_septantisms(in_book, french_version=french_v)
+            
+            if not results:
+                typer.secho(f"No Septantisms found for {in_book}.", fg=typer.colors.YELLOW)
+                raise typer.Exit(code=0)
+                
+            if simil:
+                results.sort(key=lambda x: x.get("similarity", 0.0), reverse=True)
+                
+            def format_septantism_ref(r):
+                if not r: return ""
+                parts = r.split(".")
+                if len(parts) >= 3:
+                    n1904 = service.normalizer.code_to_n1904.get(parts[0], parts[0])
+                    tob_name = service.normalizer.n1904_to_tob.get(n1904, parts[0])
+                    return f"{tob_name} {parts[1]}:{parts[2]}"
+                return r
+                
+            typer.secho(f"Found {len(results)} potential Septantisms in {in_book}:", fg=typer.colors.GREEN, bold=True)
+            for res in results:
+                score = res["score"]
+                similarity = res.get("similarity", 0.0)
+                source_ref = format_septantism_ref(res["source_ref"])
+                target_ref = format_septantism_ref(res["target_ref"])
+                matches = res["matches"]
+                
+                typer.secho(f"[{score} matches | Similarity: {similarity:.2f}] {source_ref} -> {target_ref}", fg=typer.colors.CYAN, bold=True)
+                
+                match_strings = []
+                for m in matches:
+                    gloss = m.get("gloss")
+                    gloss_str = f" [{gloss}]" if gloss else ""
+                    match_strings.append(f"{m['lemma']}{gloss_str} ({', '.join(m['target_words'])})")
+                    
+                typer.secho(f"Shared lemmas (with OT words): {', '.join(match_strings)}", fg=typer.colors.YELLOW)
+                
+                # Prepare sets of words to highlight
+                source_words_to_highlight = set()
+                target_words_to_highlight = set()
+                for m in matches:
+                    source_words_to_highlight.update(m.get("source_words", []))
+                    target_words_to_highlight.update(m.get("target_words", []))
+
+                # Highlight function
+                def highlight_words(text, words_to_highlight):
+                    if not text or not words_to_highlight: return text
+                    
+                    import unicodedata
+                    highlighted_text = unicodedata.normalize("NFC", text)
+                    
+                    for w in words_to_highlight:
+                        # Simple replacement; relies on word matching exactly (no regex boundaries to be safe with punctuation attached sometimes)
+                        colored_w = typer.style(w, fg=typer.colors.MAGENTA, bold=True)
+                        highlighted_text = highlighted_text.replace(w, colored_w)
+                    return highlighted_text
+
+                src_txt = highlight_words(res.get('source_text', ''), source_words_to_highlight)
+                tgt_txt = highlight_words(res.get('target_text', ''), target_words_to_highlight)
+                
+                src_fr = res.get('source_fr')
+                tgt_fr = res.get('target_fr')
+                
+                typer.secho(f" {source_ref}: ", nl=False, fg=typer.colors.GREEN)
+                typer.echo(src_txt)
+                if src_fr:
+                    typer.secho(f"   (FR) ", nl=False, fg=typer.colors.CYAN)
+                    typer.echo(f"{src_fr}")
+                    
+                typer.secho(f" {target_ref}: ", nl=False, fg=typer.colors.GREEN)
+                typer.echo(tgt_txt)
+                if tgt_fr:
+                    typer.secho(f"   (FR) ", nl=False, fg=typer.colors.CYAN)
+                    typer.echo(f"{tgt_fr}")
+                typer.echo("-" * 40)
+                
+            raise typer.Exit(code=0)
+
+        # Call Service normal find
         response = service.find(
             query=word,
             limit=limit,
@@ -351,6 +444,8 @@ def find(
     except ValueError as e:
         typer.secho(str(e), fg=typer.colors.YELLOW)
         raise typer.Exit(code=1)
+    except typer.Exit:
+        raise
     except Exception as e:
         typer.secho(f"Error during search: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
@@ -502,7 +597,8 @@ def greek(
         lemma = token.get("lemma", "")
         norm = token.get("norm", "")
         pos = token.get("pos", "")
-        # tag = token.get("tag", "") 
+        tag = token.get("tag", "")
+        tag_explain = token.get("tag_explain", "")
         
         # Friendly POS Names
         POS_NAMES = {
@@ -531,6 +627,11 @@ def greek(
         if norm and norm != lemma:
              typer.secho(f"  Norm:           {norm}", fg=typer.colors.BRIGHT_BLACK)
         typer.secho(f"  Part of Speech: {pos_display}", fg=typer.colors.CYAN)
+        if tag and tag != pos:
+            tag_str = tag
+            if tag_explain:
+                tag_str += f" ({tag_explain})"
+            typer.secho(f"  Tag (Detailed): {tag_str}", fg=typer.colors.CYAN)
         
         # 2. Morphology (Grouped and Expanded)
         morph = token.get("morph", {})
@@ -563,6 +664,8 @@ def greek(
         dep = token.get("dep")
         dep_desc = token.get("dep_explain", "")
         head = token.get("head")
+        head_lemma = token.get("head_lemma", "")
+        head_pos = token.get("head_pos", "")
         
         dep_str = f"{dep}"
         if dep_desc:
@@ -570,7 +673,10 @@ def greek(
              
         if dep and head and dep != "ROOT":
              # Special handling for common cryptic labels if needed, but spacy explain is usually good
-             typer.secho(f"  Syntax: {dep_str} → Head: {head}", fg=typer.colors.MAGENTA)
+             head_str = head
+             if head_lemma and head_pos:
+                 head_str += f" (Lemma: {head_lemma}, POS: {head_pos})"
+             typer.secho(f"  Syntax: {dep_str} → Head: {head_str}", fg=typer.colors.MAGENTA)
         elif dep == "ROOT":
              dep_str = "Sentence Root"
              typer.secho(f"  Syntax: {dep_str}", fg=typer.colors.MAGENTA, bold=True)
@@ -580,10 +686,26 @@ def greek(
         if token.get("is_punct"): flags.append("Punctuation")
         if token.get("is_digit"): flags.append("Digit")
         if token.get("like_num"): flags.append("Number")
-        if token.get("ent_type"): flags.append(f"Entity: {token['ent_type']}")
+        if token.get("is_stop"): flags.append("Stop Word")
+        if token.get("is_sent_start"): flags.append("Sentence Start")
+        
+        if token.get("ent_type"): 
+            ent_str = f"Entity: {token.get('ent_type')}"
+            ent_iob = token.get("ent_iob")
+            if ent_iob and ent_iob != "O":
+                ent_str += f" [{ent_iob}]"
+            flags.append(ent_str)
+            
+        ortho = []
+        shape = token.get("shape")
+        if shape: ortho.append(f"Shape: {shape}")
+        if token.get("is_upper"): ortho.append("Uppercase")
+        if token.get("is_title"): ortho.append("Titlecase")
         
         if flags:
             typer.secho(f"  Flags:  {', '.join(flags)}", fg=typer.colors.WHITE)
+        if ortho:
+            typer.secho(f"  Ortho:  {', '.join(ortho)}", fg=typer.colors.WHITE)
             
         if len(results) > 1:
             typer.echo("-" * 30)

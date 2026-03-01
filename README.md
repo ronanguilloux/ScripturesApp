@@ -310,6 +310,32 @@ Matches are **highlighted in RED** in the source text.
 ```
 
 
+### Detecting Septuagintalisms
+
+You can scientifically detect the influence of the Greek Old Testament (Septuagint / LXX) on the New Testament using the `septantism` command.
+
+```sh
+biblecli find septantism -i "Mc 1" -t fr
+```
+
+This feature uses the advanced [OdyCy NLP model](https://github.com/centre-for-humanities-computing/odycy) to scan the cross-references of a specific book or chapter and measure **text reuse**.
+
+**Scientific Approach:**
+Because Ancient Greek is highly inflectional (the same word can appear in dozens of forms), simple keyword matching is insufficient for detecting literary influence.
+1. **Lemmatization**: The tool accurately extracts the root lemma of every word, linking NT syntax to LXX syntax even if conjugations or declensions differ entirely.
+2. **Part-of-Speech Filtering**: It strictly filters out noise (conjunctions, prepositions) to only compare meaningful lexical items: Nouns (`NOUN`), Verbs (`VERB`), and Adjectives (`ADJ`).
+3. **Jaccard Similarity Index**: The output provides mathematical scoring for lexical proximity $\frac{|A \cap B|}{|A \cup B|}$, identifying statistically significant shared vocabulary between the two texts. You can append the `--simil` flag to sort all findings from highest similarity to lowest.
+4. **Translated Glosses**: The tool intercepts the underlying `Text-Fabric` dataset to provide the English dictionary translation of the shared Greek lemmas (e.g. `ἀρχή [beginning]`).
+
+**Example Output:**
+```text
+[1 matches | Similarity: 0.17] Marc 1:2 -> MalACHIE 3:1
+Shared lemmas (with OT words): ἄγγελος [angel, messenger] (ἄγγελόν)
+ Marc 1:2: Καθὼς γέγραπται ἐν τῷ Ἠσαΐᾳ ... Ἰδοὺ ἀποστέλλω τὸν ἄγγελόν μου ...
+   (FR) Selon ce qui est écrit ... Voici, j'envoie mon messager ...
+ MALACHIE 3:1: ἰδοὺ ἐγὼ ἐξαποστέλλω τὸν ἄγγελόν μου ...
+   (FR) Voici, j'envoie mon messager ...
+```
 
 ### Shortcuts
 

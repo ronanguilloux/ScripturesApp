@@ -24,7 +24,12 @@ class ServerManager: ObservableObject {
             // 1. User setting (if valid)
             // 2. Dynamic default
             if let saved = UserDefaults.standard.string(forKey: kServerPath), !saved.isEmpty {
-                 return saved
+                 var isDir: ObjCBool = false
+                 if FileManager.default.fileExists(atPath: saved, isDirectory: &isDir) && isDir.boolValue {
+                     return saved
+                 } else {
+                     UserDefaults.standard.removeObject(forKey: kServerPath)
+                 }
             }
             return defaultPath
         }

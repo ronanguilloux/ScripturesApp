@@ -70,6 +70,12 @@ def analyze(text: str):
             "is_digit": token.is_digit,
             "like_num": token.like_num,
             "ent_type": token.ent_type_,
+            "ent_iob": token.ent_iob_,
+            "is_stop": token.is_stop,
+            "shape": token.shape_,
+            "is_upper": token.is_upper,
+            "is_title": token.is_title,
+            "is_sent_start": token.is_sent_start,
         }
         
         # Clean up: Remove False booleans if "no value" means irrelevant? 

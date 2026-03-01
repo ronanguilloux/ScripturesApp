@@ -684,6 +684,195 @@ class BibleService:
             results=final_results
         )
 
+    def find_septantisms(self, book_abbr: str, french_version: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Scan a book's cross-references to the OT to find 'Septantisms'
+        by comparing the NT Greek text to the LXX Greek text of the OT reference.
+        Allows filtering by chapter or verse (e.g., 'Mc 1', 'Mc 1.1').
+        If french_version is provided, fetches the French text for both source and target.
+        """
+        # 1. Normalize book abbreviation / reference
+        
+        # Check for range pattern e.g. "Mc 1:1-3" or "Mc 1.1-3"
+        import re
+        range_match = re.search(r'(?:[.:]\s*)(\d+)(?:\s*-\s*(\d+))', book_abbr)
+        start_verse = 0
+        end_verse = 0
+        if range_match:
+            start_verse = int(range_match.group(1))
+            end_verse = int(range_match.group(2))
+            
+        parsed = self.adapter.normalize_reference(book_abbr)
+        
+        if parsed:
+            book_code, filter_chapter, filter_verse = parsed
+            if start_verse and end_verse:
+                filter_verse = 0 # Override single verse exact match
+        else:
+            # Fallback for book only (e.g., "Mc")
+            parsed = self.adapter.normalize_reference(f"{book_abbr} 1:1")
+            if not parsed:
+                raise ValueError(f"Unknown book abbreviation or reference: {book_abbr}")
+            book_code, filter_chapter, filter_verse = parsed[0], 0, 0
+            
+        is_nt = self.normalizer.is_nt(book_code)
+        if not is_nt:
+            raise ValueError(f"Septantism search is mainly for NT books referencing OT. '{book_code}' is not an NT book.")
+
+        # 2. Load DB notes for this book
+        self.ref_db.load_all(source_filter=None, scope='nt')
+        
+        # 3. Gather text pairs
+        payload = []
+        # ref_db.in_memory_refs is a dict: "MRK.1.2": {"notes": [...], "relations": [...]}
+        for ref_key, data in self.ref_db.in_memory_refs.items():
+            if not ref_key.startswith(f"{book_code}."):
+                continue
+                
+            parts = ref_key.split(".")
+            if len(parts) != 3: continue
+            b, c, v = parts[0], int(parts[1]), int(parts[2])
+            
+            # Apply chapter filter
+            if filter_chapter > 0 and c != filter_chapter:
+                continue
+                
+            # Apply verse filter
+            if start_verse > 0 and end_verse > 0:
+                if not (start_verse <= v <= end_verse):
+                    continue
+            elif filter_verse > 0:
+                if v != filter_verse:
+                    continue
+            
+            # Get source text (NT)
+            try:
+                source_verse = self.adapter.get_verse(b, c, v, version="N1904")
+                if not source_verse or not source_verse.text: continue
+                source_text = source_verse.text
+                
+                source_fr = None
+                if french_version:
+                    fr_v = self.adapter.get_verse(b, c, v, version=french_version)
+                    if fr_v: source_fr = fr_v.text
+            except:
+                continue
+            
+            for rel in data.get("relations", []):
+                target_ref = rel["target"]
+                
+                # Check if target is OT
+                parsed_target = self.adapter.normalize_reference(target_ref)
+                if not parsed_target: continue
+                tb, tc, tv = parsed_target
+                
+                if self.normalizer.is_nt(tb):
+                    continue # only OT references
+                    
+                # Get target text (LXX)
+                try:
+                    target_verse = self.adapter.get_verse(tb, tc, tv, version="LXX")
+                    if not target_verse or not target_verse.text: continue
+                    target_text = target_verse.text
+                    
+                    target_fr = None
+                    if french_version:
+                        fr_tgt = self.adapter.get_verse(tb, tc, tv, version=french_version)
+                        if fr_tgt: target_fr = fr_tgt.text
+                except:
+                    continue
+                    
+                pair_id = f"{ref_key} -> {target_ref}"
+                payload.append({
+                    "id": pair_id,
+                    "source_ref": ref_key,
+                    "target_ref": target_ref,
+                    "source_text": source_text,
+                    "target_text": target_text,
+                    "source_fr": source_fr,
+                    "target_fr": target_fr
+                })
+
+        if not payload:
+            return []
+
+        # 4. Call Worker
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        workers_dir = os.path.join(current_dir, "workers")
+        project_root = os.path.dirname(os.path.dirname(current_dir))
+        worker_script = os.path.join(workers_dir, "septantism_worker.py")
+        
+        venv_python = os.path.join(project_root, ".venv-spacy", "bin", "python3")
+        if not os.path.exists(venv_python):
+             venv_python = sys.executable
+             
+        cmd = [venv_python, worker_script]
+
+        try:
+            # We pass JSON string to stdin
+            input_json = json.dumps(payload)
+            result = subprocess.run(cmd, input=input_json, text=True, capture_output=True)
+        except Exception as e:
+            raise RuntimeError(f"Error running septantism worker: {e}")
+            
+        if result.returncode != 0:
+            raise RuntimeError(f"Worker failed: {result.stderr}")
+            
+        try:
+            output = json.loads(result.stdout)
+            if isinstance(output, dict) and "error" in output:
+                raise RuntimeError(output["error"])
+        except json.JSONDecodeError:
+            raise RuntimeError(f"Invalid output from worker: {result.stdout}")
+
+        # Enhance output with texts for display
+        final_results = []
+        payload_map = {p["id"]: p for p in payload}
+        
+        # Fast lookup for Greek Lemmas in N1904 to get English gloss
+        lemma_to_gloss = {}
+        if self.adapter.n1904:
+            import unicodedata
+            F = self.adapter.n1904.api.F
+            target_lemmas = set()
+            for item in output:
+                if item["score"] > 0:
+                    for match in item.get("matches", []):
+                        target_lemmas.add(unicodedata.normalize('NFC', match["lemma"]))
+                        
+            if target_lemmas:
+                for w in F.otype.s('word'):
+                    db_lemma = F.lemma.v(w)
+                    if not db_lemma: continue
+                    db_lemma_nfc = unicodedata.normalize('NFC', db_lemma)
+                    if db_lemma_nfc in target_lemmas and db_lemma_nfc not in lemma_to_gloss:
+                        lemma_to_gloss[db_lemma_nfc] = F.gloss.v(w)
+                        if len(lemma_to_gloss) == len(target_lemmas):
+                            break
+            
+        for item in output:
+            if item["score"] > 0: # Only return hits
+                # re-attach source/target details
+                orig = payload_map.get(item["id"], {})
+                item["source_ref"] = orig.get("source_ref")
+                item["target_ref"] = orig.get("target_ref")
+                item["source_text"] = orig.get("source_text")
+                item["target_text"] = orig.get("target_text")
+                item["source_fr"] = orig.get("source_fr")
+                item["target_fr"] = orig.get("target_fr")
+                
+                # Fetch Glosses for matches
+                for match in item.get("matches", []):
+                    lemma_nfc = unicodedata.normalize('NFC', match["lemma"])
+                    if lemma_nfc in lemma_to_gloss:
+                        match["gloss"] = lemma_to_gloss[lemma_nfc]
+                                
+                final_results.append(item)
+                
+        # Sort by score desc, or source ref
+        final_results.sort(key=lambda x: x["score"], reverse=True)
+        return final_results
+
     def greek_analysis(self, text: str) -> List[Dict[str, Any]]:
         """
         Perform deep NLP analysis on Greek text using OdyCy.
