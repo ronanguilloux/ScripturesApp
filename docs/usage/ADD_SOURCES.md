@@ -13,7 +13,7 @@ The EPUB digital copies of these Bibles you can acquire online are DRM-free, so 
 Use the CLI version of `unzip` as macOS native unzip from the UI won't help.
 
 
-We provide scripts in the `converters/` directory to convert these unzipped EPUB to a compatible format. These scripts leverage the fact that EPUBs unzipped contents are well structured into books, chapters and verses so that the TF Walker API can parse and transform it into a Text-Fabric compatible format (*[explain me what is that](#tf)*).
+We provide scripts in the `scripts/converters/` directory to convert these unzipped EPUB to a compatible format. These scripts leverage the fact that EPUBs unzipped contents are well structured into books, chapters and verses so that the TF Walker API can parse and transform it into a Text-Fabric compatible format (*[explain me what is that](#tf)*).
 
 
 The expected input structure, at first, should look like this:
@@ -84,7 +84,7 @@ Due to copyright, you must provide your own copy.
     *  `unzip [EPUB_FILE]`
     *  This extracts all files in the same directory as the ZIP file: `./epubs/input/TOB/`
 3.  **Convert**:
-    * Run the provided script `converters/convert_tob_epub.py` - The script assumes the unzipping of the EPUB has already created a `epubs/input/TOB/OPS` folder.
+    * Run the provided script `scripts/converters/convert_tob_epub.py` - The script assumes the unzipping of the EPUB has already created a `epubs/input/TOB/OPS` folder.
     *   The script generates files in: `./epubs/output/TOB/1.0/`
 3.  **Install**:
     *   Manually copy, or move, the generated files to their final destination `~/text-fabric-data/TOB/1.0/`.
@@ -94,7 +94,7 @@ Due to copyright, you must provide your own copy.
 Exact same process, follow all steps as above, with the following differences:
 
 - **Acquire a Bible de Jerusalem EPUB version** [here](https://www.fnac.com/livre-numerique/a7929034/CTAD-LA-BIBLE-DE-JERUSALEM) as your personal digital copy for private usage.
-- **Use the proper converter script**: `converters/convert_bj_epub.py`
+- **Use the proper converter script**: `scripts/converters/convert_bj_epub.py`
 - **The output directory is** `./epubs/output/BJ/1.0/` and the final destination is `~/text-fabric-data/BJ/1.0/`.
 
 ## 3. New Arabic Version (NAV), 'Ketab El Hayat' (كتاب الحياة)
@@ -107,7 +107,7 @@ We provide a converter script for the Zefania XML version of it, found on Github
 2.  **Convert**:
     *   Place the XML file in `epubs/input/NAV/`.
     *   Rename it to `ar-Aranav-New-Arabic-Ketab-el-hayat.xml`.
-    *   Run `python3 converters/convert_nav_xml.py`.
+    *   Run `python3 scripts/converters/convert_nav_xml.py`.
 3.  **Install**:
     *   Move the output directory content from `epubs/output/NAV/1.0` into `~/text-fabric-data/NAV/1.0`.
 
