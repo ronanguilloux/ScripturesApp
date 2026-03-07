@@ -100,6 +100,11 @@ def main(
                Displays Greek text + French translation (for Greek search).
                Matches are highlighted.
 
+        intertext [BOOK]
+               Characterize intertextuality (links between NT and OT).
+               Scans cross-references for a book and scores text reuse
+               using L/NL (Littéral) and E/NE (Explicite) markers.
+
         start [--host HOST] [--port PORT] [--detach]
                Start the API server (background) and build/launch the macOS App.
                Use --detach to run in background.
@@ -531,6 +536,116 @@ def find(
             typer.secho(f"{label}: {response.lemma}", fg=typer.colors.CYAN, bold=True)
     
     typer.secho(f"Total occurrences: {response.total}", bold=True, fg=typer.colors.GREEN)
+
+@app.command()
+def intertext(
+    book: Annotated[str, typer.Argument(help="Book abbreviation (e.g., Mc)")],
+    bible: Annotated[Optional[str], typer.Option("--bible", "-b", help="French Version (tob, bj)")] = None,
+    translations: Annotated[Optional[List[str]], typer.Option("--tr", "-tr", "-t", help="Translations to show (en, fr, gr, hb)")] = None,
+    simil: Annotated[bool, typer.Option("--simil", help="Sort results by similarity percentage (descending)")] = False,
+):
+    """
+    Characterize intertextuality (links between NT and OT).
+    
+    Generates output similar to the 'septantism' command but prepends 
+    [E] or [NE] (Explicite/Non-explicite) and [L] or [NL] (Littéral/Non-littéral) 
+    markers based on explicit citation lemmas and similarity scores (> 0.8).
+    
+    Example:
+        biblecli intertext "Mc 16" -t fr --simil -b bj
+    """
+    from src.application.services import BibleService
+    import sys
+
+    try:
+        service = BibleService()
+    except Exception as e:
+        typer.secho(f"Error initializing service: {e}", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    french_v = None
+    if translations and "fr" in [t.lower() for t in translations]:
+        french_v = bible if bible else "tob"
+        
+    typer.echo(f"Scanning {book} for Intertextual relationships... (this may take a minute)")
+    results = service.analyze_intertextuality(book, french_version=french_v)
+    
+    if not results:
+        typer.secho(f"No intertextual connections found for {book}.", fg=typer.colors.YELLOW)
+        raise typer.Exit(code=0)
+        
+    if simil:
+        results.sort(key=lambda x: x.get("similarity", 0.0), reverse=True)
+        
+    def format_intertext_ref(r):
+        if not r: return ""
+        parts = r.split(".")
+        if len(parts) >= 3:
+            n1904 = service.normalizer.code_to_n1904.get(parts[0], parts[0])
+            tob_name = service.normalizer.n1904_to_tob.get(n1904, parts[0])
+            return f"{tob_name} {parts[1]}:{parts[2]}"
+        return r
+        
+    typer.secho(f"Found {len(results)} intertextual relations in {book}:", fg=typer.colors.GREEN, bold=True)
+    
+    for res in results:
+        flags = res.get("intertext_flags", ["NE", "NL"])
+        flags_str = "".join([f"[{f}]" for f in flags])
+        
+        score = res["score"]
+        similarity = res.get("similarity", 0.0)
+        source_ref = format_intertext_ref(res["source_ref"])
+        target_ref = format_intertext_ref(res["target_ref"])
+        matches = res["matches"]
+        
+        # Add flags prefix
+        prefix_color = typer.colors.MAGENTA if "E" in flags or "L" in flags else typer.colors.BLUE
+        typer.secho(f"{flags_str} [{score} matches | Similarity: {similarity:.2f}] {source_ref} -> {target_ref}", fg=prefix_color, bold=True)
+        
+        if matches:
+            match_strings = []
+            for m in matches:
+                gloss = m.get("gloss")
+                gloss_str = f" [{gloss}]" if gloss else ""
+                match_strings.append(f"{m['lemma']}{gloss_str} ({', '.join(m['target_words'])})")
+                
+            typer.secho(f"Shared lemmas (with OT words): {', '.join(match_strings)}", fg=typer.colors.YELLOW)
+        
+        # Prepare highlights
+        source_words_to_highlight = set()
+        target_words_to_highlight = set()
+        for m in matches:
+            source_words_to_highlight.update(m.get("source_words", []))
+            target_words_to_highlight.update(m.get("target_words", []))
+
+        def highlight_words(text, words_to_highlight):
+            if not text or not words_to_highlight: return text
+            import unicodedata
+            highlighted_text = unicodedata.normalize("NFC", text)
+            for w in words_to_highlight:
+                colored_w = typer.style(w, fg=typer.colors.MAGENTA, bold=True)
+                highlighted_text = highlighted_text.replace(w, colored_w)
+            return highlighted_text
+
+        src_txt = highlight_words(res.get('source_text', ''), source_words_to_highlight)
+        tgt_txt = highlight_words(res.get('target_text', ''), target_words_to_highlight)
+        
+        src_fr = res.get('source_fr')
+        tgt_fr = res.get('target_fr')
+        
+        typer.secho(f" {source_ref}: ", nl=False, fg=typer.colors.GREEN)
+        typer.echo(src_txt)
+        if src_fr:
+            typer.secho(f"   (FR) ", nl=False, fg=typer.colors.CYAN)
+            typer.echo(f"{src_fr}")
+            
+        typer.secho(f" {target_ref}: ", nl=False, fg=typer.colors.GREEN)
+        typer.echo(tgt_txt)
+        if tgt_fr:
+            typer.secho(f"   (FR) ", nl=False, fg=typer.colors.CYAN)
+            typer.echo(f"{tgt_fr}")
+        typer.echo("-" * 40)
+        
 @app.command()
 def greek(
     word: Annotated[str, typer.Argument(help="Greek word or phrase to analyze using OdyCy")],
@@ -982,6 +1097,46 @@ class ProcessManager:
             if self.state_file.exists():
                 self.state_file.unlink()
 
+@app.command()
+def generate_openapi(
+    output: str = typer.Option("docs/api/openapi.json", "--output", "-o", help="Output file path")
+):
+    """
+    Generate the OpenAPI schema for all available APIs.
+    """
+    import json
+    from src.api.main import app as main_app
+    from src.api.semantic_search import app as semantic_app
+    
+    typer.echo(f"Generating OpenAPI schema to {output}...")
+    
+    main_schema = main_app.openapi()
+    semantic_schema = semantic_app.openapi()
+    
+    for path, methods in semantic_schema.get('paths', {}).items():
+        if path in main_schema['paths']:
+            for method, details in methods.items():
+                main_schema['paths'][path][method] = details
+        else:
+            main_schema['paths'][path] = methods
+
+    if 'components' not in main_schema:
+        main_schema['components'] = {}
+    if 'schemas' not in main_schema['components']:
+        main_schema['components']['schemas'] = {}
+
+    for schema_name, schema_val in semantic_schema.get('components', {}).get('schemas', {}).items():
+        main_schema['components']['schemas'][schema_name] = schema_val
+
+    # Ensure directory exists
+    from pathlib import Path
+    Path(output).parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output, 'w') as f:
+        json.dump(main_schema, f, indent=2)
+        
+    typer.secho(f"Successfully generated OpenAPI schema at {output}", fg=typer.colors.GREEN)
+
 if __name__ == "__main__":
     import sys
     # Manual routing for default command
@@ -989,7 +1144,7 @@ if __name__ == "__main__":
         cmd = sys.argv[1]
         # Check if first arg is a registered command
         # Commands: add, find, start, stop, restart, greek. (read is explicit default)
-        known_commands = ["add", "read", "find", "start", "stop", "restart", "list", "greek"]
+        known_commands = ["add", "read", "find", "start", "stop", "restart", "list", "greek", "intertext", "generate-openapi"]
         if cmd not in known_commands and not cmd.startswith("-"):
              # Insert 'read' to make it the command
              sys.argv.insert(1, "read")

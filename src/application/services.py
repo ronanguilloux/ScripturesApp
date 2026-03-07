@@ -873,6 +873,172 @@ class BibleService:
         final_results.sort(key=lambda x: x["score"], reverse=True)
         return final_results
 
+    def analyze_intertextuality(self, book_abbr: str, french_version: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Analyze the intertextual relationships for a specific book (e.g. 'Mc' for Mark),
+        categorizing cross-references based on explicit citation (E/NE) and literality (L/NL).
+        """
+        import re
+        
+        # 1. Normalize reference and filter by prefix
+        range_match = re.search(r'(?:[.:]\s*)(\d+)(?:\s*-\s*(\d+))', book_abbr)
+        start_verse, end_verse = 0, 0
+        if range_match:
+            start_verse = int(range_match.group(1))
+            end_verse = int(range_match.group(2))
+            
+        parsed = self.adapter.normalize_reference(book_abbr)
+        
+        if parsed:
+            book_code, filter_chapter, filter_verse = parsed
+            if start_verse and end_verse:
+                filter_verse = 0 
+        else:
+            parsed = self.adapter.normalize_reference(f"{book_abbr} 1:1")
+            if not parsed:
+                raise ValueError(f"Unknown book abbreviation: {book_abbr}")
+            book_code, filter_chapter, filter_verse = parsed[0], 0, 0
+            
+        if not self.normalizer.is_nt(book_code):
+            raise ValueError(f"Intertextuality analysis is primarily designed to assess how NT books quote the OT. '{book_code}' is not an NT book.")
+
+        # 2. Gather text pairs using ref_db
+        self.ref_db.load_all(source_filter=None, scope='nt')
+        payload = []
+        
+        for ref_key, data in self.ref_db.in_memory_refs.items():
+            if not ref_key.startswith(f"{book_code}."):
+                continue
+                
+            parts = ref_key.split(".")
+            if len(parts) != 3: continue
+            b, c, v = parts[0], int(parts[1]), int(parts[2])
+            
+            if filter_chapter > 0 and c != filter_chapter: continue
+            if start_verse > 0 and end_verse > 0:
+                if not (start_verse <= v <= end_verse): continue
+            elif filter_verse > 0:
+                if v != filter_verse: continue
+            
+            try:
+                source_verse = self.adapter.get_verse(b, c, v, version="N1904")
+                if not source_verse or not source_verse.text: continue
+                source_text = source_verse.text
+                
+                source_fr = None
+                if french_version:
+                    fr_v = self.adapter.get_verse(b, c, v, version=french_version)
+                    if fr_v: source_fr = fr_v.text
+            except:
+                continue
+            
+            for rel in data.get("relations", []):
+                target_ref = rel["target"]
+                
+                parsed_target = self.adapter.normalize_reference(target_ref)
+                if not parsed_target: continue
+                tb, tc, tv = parsed_target
+                
+                if self.normalizer.is_nt(tb):
+                    continue 
+                    
+                try:
+                    target_verse = self.adapter.get_verse(tb, tc, tv, version="LXX")
+                    if not target_verse or not target_verse.text: continue
+                    target_text = target_verse.text
+                    
+                    target_fr = None
+                    if french_version:
+                        fr_tgt = self.adapter.get_verse(tb, tc, tv, version=french_version)
+                        if fr_tgt: target_fr = fr_tgt.text
+                except:
+                    continue
+                    
+                pair_id = f"{ref_key} -> {target_ref}"
+                payload.append({
+                    "id": pair_id,
+                    "source_ref": ref_key,
+                    "target_ref": target_ref,
+                    "source_text": source_text,
+                    "target_text": target_text,
+                    "source_fr": source_fr,
+                    "target_fr": target_fr
+                })
+
+        if not payload:
+            return []
+
+        # 3. Call the intertext worker
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        workers_dir = os.path.join(current_dir, "workers")
+        project_root = os.path.dirname(os.path.dirname(current_dir))
+        worker_script = os.path.join(workers_dir, "intertext_worker.py")
+        
+        venv_python = os.path.join(project_root, ".venv-spacy", "bin", "python3")
+        if not os.path.exists(venv_python):
+             venv_python = sys.executable
+             
+        cmd = [venv_python, worker_script]
+
+        try:
+            input_json = json.dumps(payload)
+            result = subprocess.run(cmd, input=input_json, text=True, capture_output=True)
+        except Exception as e:
+            raise RuntimeError(f"Error running intertext worker: {e}")
+            
+        if result.returncode != 0:
+            raise RuntimeError(f"Worker failed: {result.stderr}")
+            
+        try:
+            output = json.loads(result.stdout)
+            if isinstance(output, dict) and "error" in output:
+                raise RuntimeError(output["error"])
+        except json.JSONDecodeError:
+            raise RuntimeError(f"Invalid output from worker: {result.stdout}")
+
+        # 4. Bind results together with texts and glosses
+        final_results = []
+        payload_map = {p["id"]: p for p in payload}
+        
+        lemma_to_gloss = {}
+        if self.adapter.n1904:
+            import unicodedata
+            F = self.adapter.n1904.api.F
+            target_lemmas = set()
+            for item in output:
+                for match in item.get("matches", []):
+                    target_lemmas.add(unicodedata.normalize('NFC', match["lemma"]))
+                        
+            if target_lemmas:
+                for w in F.otype.s('word'):
+                    db_lemma = F.lemma.v(w)
+                    if not db_lemma: continue
+                    db_lemma_nfc = unicodedata.normalize('NFC', db_lemma)
+                    if db_lemma_nfc in target_lemmas and db_lemma_nfc not in lemma_to_gloss:
+                        lemma_to_gloss[db_lemma_nfc] = F.gloss.v(w)
+                        if len(lemma_to_gloss) == len(target_lemmas):
+                            break
+            
+        for item in output:
+            orig = payload_map.get(item["id"], {})
+            item["source_ref"] = orig.get("source_ref")
+            item["target_ref"] = orig.get("target_ref")
+            item["source_text"] = orig.get("source_text")
+            item["target_text"] = orig.get("target_text")
+            item["source_fr"] = orig.get("source_fr")
+            item["target_fr"] = orig.get("target_fr")
+            
+            for match in item.get("matches", []):
+                lemma_nfc = unicodedata.normalize('NFC', match["lemma"])
+                if lemma_nfc in lemma_to_gloss:
+                    match["gloss"] = lemma_to_gloss[lemma_nfc]
+                            
+            final_results.append(item)
+                
+        # Return sorted by similarity initially for better evaluation
+        final_results.sort(key=lambda x: x["similarity"], reverse=True)
+        return final_results
+
     def greek_analysis(self, text: str) -> List[Dict[str, Any]]:
         """
         Perform deep NLP analysis on Greek text using OdyCy.

@@ -266,6 +266,48 @@
           }
         }
       }
+    },
+    "/search": {
+      "post": {
+        "summary": "Search",
+        "operationId": "search_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SearchResult"
+                  },
+                  "type": "array",
+                  "title": "Response Search Search Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -623,6 +665,89 @@
           "verses"
         ],
         "title": "VerseResponse"
+      },
+      "SearchQuery": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 10
+          },
+          "translation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation"
+          },
+          "book": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "SearchQuery"
+      },
+      "SearchResult": {
+        "properties": {
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "translation": {
+            "type": "string",
+            "title": "Translation"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "book": {
+            "type": "string",
+            "title": "Book"
+          },
+          "chapter": {
+            "type": "integer",
+            "title": "Chapter"
+          },
+          "verse": {
+            "type": "integer",
+            "title": "Verse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "text",
+          "translation",
+          "score",
+          "book",
+          "chapter",
+          "verse"
+        ],
+        "title": "SearchResult"
       }
     }
   }

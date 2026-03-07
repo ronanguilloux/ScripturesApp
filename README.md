@@ -337,6 +337,25 @@ Shared lemmas (with OT words): ἄγγελος [angel, messenger] (ἄγγελό
    (FR) Voici, j'envoie mon messager ...
 ```
 
+### Characterizing Intertextuality
+
+To go further than simply detecting text reuse, the `intertext` command characterizes the theological relationships between New Testament texts and Old Testament sources.
+
+```sh
+biblecli intertext "Mc 16" -t fr --simil -b bj
+```
+
+This command categorizes cross-references using two dimensions:
+1. **[E] Explicit / [NE] Non-explicit**: Detects the presence of explicit citation markers (lemmas like `γράφω` "it is written", `πληρόω` "to fulfill", `λέγω`).
+2. **[L] Literal / [NL] Non-literal**: Evaluates the lexical similarity limit. If the calculated Jaccard similarity index is $\ge 0.8$, the reuse is considered Literal.
+
+**Example Output:**
+```text
+[E][NL] [0 matches | Similarity: 0.00] Marc 16:15 -> Ésaïe 52:10
+...
+```
+
+
 ### Shortcuts
 
 For convenience, you can use the `tob` command to quickly access the TOB French translation. It is equivalent to `biblecli ... -b tob`.
@@ -378,7 +397,7 @@ To run tests manually:
 
 This project exposes a JSON API to serve native applications.
 
--   **Specification**: [OpenAPI (JSON)](docs/openapi.json)
+-   **Specification**: [OpenAPI (JSON)](docs/api/openapi.json)
 -   **Run Server**:
     ```bash
     uvicorn src.api.main:app
@@ -391,6 +410,14 @@ Note that **the server restarts automatically** when lanuching the app
 ```bash
 cd macos
 swift run
+```
+
+### Generate OpenAPI Schema
+
+You can generate the complete OpenAPI schema for all available APIs (including the native API and Semantic Search) using the CLI:
+
+```bash
+biblecli generate-openapi -o docs/api/openapi.json
 ```
 
 # macOS Native App
