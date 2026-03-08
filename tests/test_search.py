@@ -65,21 +65,18 @@ def test_search_service_filter(mock_models):
 
 def test_cli_regression_legacy_command():
     """Test that 'biblecli Lc 9:54' still works (via default read command)"""
-    # We need to mock the AdapterFactory or BibleService to avoid real DB calls/TF loading
-    with patch("src.application.services.BibleService.search") as mock_search:
-        mock_search.return_value.verses = []
-        mock_search.return_value.cross_references = None
+    with patch("src.cli.SearchBibleUseCase") as mock_use_case_cls, \
+         patch("src.cli.DependencyContainer"):
         
-        # Note: Typer's runner.invoke doesn't simulate sys.argv injection directly 
-        # because we invoke `app`. 
-        # But our `cli.py` has `app.command(name="read")` as `main`.
-        # When we run `biblecli "Lc 9:54"`, `sys.argv` logic injects "read".
-        # So we should test `runner.invoke(cli_app, ["read", "Lc 9:54"])`
+        mock_use_case = mock_use_case_cls.return_value
+        mock_use_case.execute.return_value = MagicMock()
+        mock_use_case.execute.return_value.verses = []
+        mock_use_case.execute.return_value.cross_references = None
         
         result = runner.invoke(cli_app, ["read", "Lc 9:54"])
         assert result.exit_code == 0
-        mock_search.assert_called_once()
-        args = mock_search.call_args
+        mock_use_case.execute.assert_called_once()
+        args = mock_use_case.execute.call_args
         assert args.kwargs['reference'] == "Lc 9:54"
 
 def test_cli_regression_legacy_command_implicit_routing():

@@ -28,20 +28,21 @@ def test_find_no_double_header():
                 book_code="Jn",
                 chapter=1,
                 verse=1,
-                corpus="NT",
                 highlights=[],
                 translations={"fr": "French text"}
             )
         ]
     )
     
-    # Patch the BibleService class where it is defined, since it is imported inside the function
-    with patch("src.application.services.BibleService") as MockService:
+    # Patch the UseCase and DependencyContainer so we don't load TF data
+    with patch("src.cli.DependencyContainer") as MockDep, patch("src.cli.FindWordsUseCase") as MockUseCase:
         # Configure the mock instance
-        mock_instance = MockService.return_value
-        mock_instance.find.return_value = mock_response
-        # Set normalizer to None or a Mock to avoid AttributeError
-        mock_instance.normalizer = None
+        mock_instance = MockUseCase.return_value
+        mock_instance.execute.return_value = mock_response
+        
+        mock_norm = MagicMock()
+        mock_norm.n1904_to_tob.get.return_value = "Jn"
+        MockDep.get_bible_adapter.return_value.normalizer = mock_norm
         
         result = runner.invoke(app, ["find", "test", "-t", "fr"])
         

@@ -8,8 +8,8 @@ import os
 # Ensure project root is in path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.api.main import app, get_service
-from src.application.services import BibleService
+from src.api.main import app, get_search_use_case
+from src.application.use_cases.search import SearchBibleUseCase
 from src.domain.models import Verse, Language
 
 # Mock Data
@@ -91,15 +91,12 @@ def mock_ref_db():
     return db
 
 @pytest.fixture
-def bible_service(mock_adapter, mock_ref_db):
-    with patch('src.application.services.ReferenceDatabase', return_value=mock_ref_db):
-        service = BibleService(adapter=mock_adapter)
-        service.ref_db = mock_ref_db
-        return service
+def search_use_case(mock_adapter, mock_ref_db):
+    return SearchBibleUseCase(mock_adapter, mock_ref_db, mock_adapter.normalizer)
 
 @pytest.fixture
-def client(bible_service):
-    app.dependency_overrides[get_service] = lambda: bible_service
+def client(search_use_case):
+    app.dependency_overrides[get_search_use_case] = lambda: search_use_case
     return TestClient(app)
 
 def test_health_check(client):
@@ -191,8 +188,8 @@ def test_search_crossref_full(client, mock_ref_db, mock_adapter):
     rel = data["cross_references"]["relations"][0]
     assert rel["text"] is not None
 
-def test_search_crossref_source_filter(client, bible_service):
-    with patch.object(bible_service.ref_db, 'load_all') as mock_load:
+def test_search_crossref_source_filter(client, search_use_case):
+    with patch.object(search_use_case.ref_db, 'load_all') as mock_load:
          client.get("/api/v1/search?q=Gn 1:1&crossref=true&crossref_source=BJ")
          mock_load.assert_called_with(source_filter="BJ", scope='ot')
 

@@ -312,7 +312,8 @@ class BibleService:
 
                  # Attach name to primary
                  # We need to recreate the Verse object since it's frozen
-                 item_primary = item_primary.model_copy(update={"book_name": header_name})
+                 import dataclasses
+                 item_primary = dataclasses.replace(item_primary, book_name=header_name)
                  
                  verses_data.append(VerseItem(
                      ref=f"{b} {c}:{v}",

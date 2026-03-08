@@ -10,8 +10,10 @@ if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
 from contextlib import asynccontextmanager
-from src.application.services import BibleService
-from src.domain.models import VerseResponse, FindResponse
+from src.api.dtos import VerseResponseDTO, FindResponseDTO
+from src.dependencies import DependencyContainer
+from src.application.use_cases.search import SearchBibleUseCase
+from src.application.use_cases.find import FindWordsUseCase
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,15 +29,28 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Dependency Injection for Service
-def get_service():
-    return BibleService()
+# Dependency Injection for Use Cases
+def get_search_use_case():
+    bible_adapter = DependencyContainer.get_bible_adapter()
+    return SearchBibleUseCase(
+        bible_adapter,
+        DependencyContainer.get_ref_db(),
+        bible_adapter.normalizer
+    )
+
+def get_find_use_case():
+    bible_adapter = DependencyContainer.get_bible_adapter()
+    return FindWordsUseCase(
+        bible_adapter,
+        DependencyContainer.get_nlp_adapter(),
+        bible_adapter.normalizer
+    )
 
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
 
-@app.get("/api/v1/search", response_model=VerseResponse)
+@app.get("/api/v1/search", response_model=VerseResponseDTO)
 def search_verses(
     q: str = Query(..., description="Bible reference (e.g. 'Gn 1:1')"),
     tr: Optional[List[str]] = Query(None, description="Translations to show (en, fr, gr, hb, ar)"),
@@ -44,9 +59,9 @@ def search_verses(
     crossref: bool = Query(False, description="Show cross references"),
     crossref_full: bool = Query(False, description="Display cross-references with text"),
     crossref_source: Optional[str] = Query(None, description="Filter cross-references by source"),
-    service: BibleService = Depends(get_service)
+    use_case: SearchBibleUseCase = Depends(get_search_use_case)
 ):
-    return service.search(
+    return use_case.execute(
         reference=q,
         translations=tr,
         version=v,
@@ -56,20 +71,20 @@ def search_verses(
         crossref_source=crossref_source
     )
 
-@app.get("/api/v1/find", response_model=FindResponse)
+@app.get("/api/v1/find", response_model=FindResponseDTO)
 def find_words(
     q: str = Query(..., description="Search query (Greek word or French expression)"),
     tr: Optional[List[str]] = Query(None, description="Translations to show (en, fr, gr, hb, ar)"),
     v: Optional[str] = Query(None, description="Greek Corpus (nt, lxx, all)"),
     bible: Optional[str] = Query(None, description="French version (tob, bj)"),
     limit: int = Query(20, description="Max results"),
-    service: BibleService = Depends(get_service)
+    use_case: FindWordsUseCase = Depends(get_find_use_case)
 ):
     """
     Find occurrences of a word or expression.
     Detects script (Greek vs Latin) to determine search mode.
     """
-    return service.find(
+    return use_case.execute(
         query=q,
         limit=limit,
         bible=bible,

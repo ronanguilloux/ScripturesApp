@@ -10,48 +10,13 @@ from typing import Optional, List
 from typing_extensions import Annotated
 
 from src.presenter import VersePresenter
-from src.book_normalizer import BookNormalizer
-from src.references_db import ReferenceDatabase
-
+from src.dependencies import DependencyContainer
+from src.application.use_cases.search import SearchBibleUseCase
+from src.application.use_cases.find import FindWordsUseCase
+from src.application.use_cases.intertext import FindSeptantismsUseCase, AnalyzeIntertextualityUseCase
+from src.application.use_cases.greek import AnalyzeGreekWordUseCase
 
 app = typer.Typer(help="ScripturesApp - Modern Python Bible Reader", context_settings={"help_option_names": ["-h", "--help"]})
-
-class AdapterFactory:
-    _adapter = None
-    
-    @classmethod
-    def get(cls):
-        if cls._adapter:
-            return cls._adapter
-            
-        # Data dir for normalizer (bible_books.json)
-        # Assuming src/cli.py is in src/, so data is in ../data relative to this file
-        src_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(src_dir)
-        data_dir = os.path.join(project_root, "data")
-        
-        # Define providers
-        def n1904_p():
-             with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
-                 try: return use("CenterBLC/N1904", version="1.0.0", silent=True)
-                 except: return None
-        
-        def lxx_p():
-             # Basic implementation
-             with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
-                 try: return use("CenterBLC/LXX", version="1935", check=False, silent=True)
-                 except: return None
-
-        # ... other providers can be added as needed or rely on Adapter defaults ...
-        
-        adapter = TextFabricAdapter(
-            data_dir=data_dir,
-            n1904_provider=n1904_p,
-            lxx_provider=lxx_p,
-            # Pass others if needed, adapter has some internal fallbacks too
-        )
-        cls._adapter = adapter
-        return adapter
 
 @app.command(name="read")
 def main(
@@ -140,8 +105,8 @@ def main(
         typer.echo(ctx.get_help())
         raise typer.Exit(code=0)
 
-    from src.application.services import BibleService
-    service = BibleService()
+    bible_adapter = DependencyContainer.get_bible_adapter()
+    use_case = SearchBibleUseCase(bible_adapter, DependencyContainer.get_ref_db(), bible_adapter.normalizer)
     presenter = VersePresenter()
     
     # Pre-process Extra Args
@@ -157,7 +122,7 @@ def main(
          typer.secho(f"\n{reference}", fg=typer.colors.GREEN, bold=True)
          
     try:
-        response = service.search(
+        response = use_case.execute(
             reference=reference,
             translations=translations,
             version=version,
@@ -196,10 +161,10 @@ def main(
              code = main_v.book_code
              
              # N1904 name
-             n1904_name = service.normalizer.code_to_n1904.get(code, code)
+             n1904_name = bible_adapter.normalizer.code_to_n1904.get(code, code)
              
              # TOB name
-             tob_name = service.normalizer.n1904_to_tob.get(n1904_name)
+             tob_name = bible_adapter.normalizer.n1904_to_tob.get(n1904_name)
              if tob_name:
                  header_name = tob_name
         
@@ -210,7 +175,7 @@ def main(
         
         if is_english_active and not is_french_active: 
              code = main_v.book_code
-             en_name = service.normalizer.code_to_n1904.get(code, code)
+             en_name = bible_adapter.normalizer.code_to_n1904.get(code, code)
              if en_name:
                  header_name = en_name.replace("_", " ")
 
@@ -226,8 +191,8 @@ def main(
                  parts = ref.split(".")
                  if len(parts) >= 3:
                      bk, ch, vs = parts[0], parts[1], parts[2]
-                     n1904 = service.normalizer.code_to_n1904.get(bk, bk)
-                     tob_name = service.normalizer.n1904_to_tob.get(n1904, bk)
+                     n1904 = bible_adapter.normalizer.code_to_n1904.get(bk, bk)
+                     tob_name = bible_adapter.normalizer.n1904_to_tob.get(n1904, bk)
                      return tob_name, ch, vs
                  return None, None, None
 
@@ -285,9 +250,7 @@ def add_cli(
     Add a new cross-reference/note to a personal collection.
     """
     try:
-        from src.application.services import AdapterFactory
-        adapter = AdapterFactory.get()
-        # AdapterFactory calculates data_dir internally, but we can access it via adapter instance
+        adapter = DependencyContainer.get_bible_adapter()
         data_dir = adapter.data_dir
         normalizer = adapter.normalizer
         
@@ -340,14 +303,16 @@ def find(
         biblecli find "Dieu" -b tob            # French TOB search
         biblecli find septantism -i Mc         # Find Septantisms in Mark
     """
-    from src.application.services import BibleService
     import sys
 
     # Initialize Service
     try:
-        service = BibleService()
+        bible_adapter = DependencyContainer.get_bible_adapter()
+        nlp_adapter = DependencyContainer.get_nlp_adapter()
+        normalizer = bible_adapter.normalizer
+        ref_db = DependencyContainer.get_ref_db()
     except Exception as e:
-        typer.secho(f"Error initializing service: {e}", fg=typer.colors.RED)
+        typer.secho(f"Error initializing dependencies: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
     try:
@@ -361,7 +326,8 @@ def find(
                 french_v = bible if bible else "tob"
                 
             typer.echo(f"Scanning {in_book} for Septantisms in OT cross-references... (this may take a minute)")
-            results = service.find_septantisms(in_book, french_version=french_v)
+            use_case = FindSeptantismsUseCase(bible_adapter, nlp_adapter, ref_db, normalizer)
+            results = use_case.execute(in_book, french_version=french_v)
             
             if not results:
                 typer.secho(f"No Septantisms found for {in_book}.", fg=typer.colors.YELLOW)
@@ -374,8 +340,8 @@ def find(
                 if not r: return ""
                 parts = r.split(".")
                 if len(parts) >= 3:
-                    n1904 = service.normalizer.code_to_n1904.get(parts[0], parts[0])
-                    tob_name = service.normalizer.n1904_to_tob.get(n1904, parts[0])
+                    n1904 = normalizer.code_to_n1904.get(parts[0], parts[0])
+                    tob_name = normalizer.n1904_to_tob.get(n1904, parts[0])
                     return f"{tob_name} {parts[1]}:{parts[2]}"
                 return r
                 
@@ -439,7 +405,8 @@ def find(
             raise typer.Exit(code=0)
 
         # Call Service normal find
-        response = service.find(
+        use_case = FindWordsUseCase(bible_adapter, nlp_adapter, normalizer)
+        response = use_case.execute(
             query=word,
             limit=limit,
             bible=bible,
@@ -479,13 +446,13 @@ def find(
         # Determine Header Name (Localized)
         header_ref = f"{item.book_code} {item.chapter}:{item.verse}"
         
-        if service.normalizer:
+        if normalizer:
             bk = item.book_code
             
             # Determine Header Name (Localized)
             # Use French by default if available (consistent with App)
-            n1904 = service.normalizer.code_to_n1904.get(bk, bk)
-            tob_name = service.normalizer.n1904_to_tob.get(n1904)
+            n1904 = normalizer.code_to_n1904.get(bk, bk)
+            tob_name = normalizer.n1904_to_tob.get(n1904)
             
             if tob_name:
                 header_ref = f"{tob_name} {item.chapter}:{item.verse}"
@@ -554,13 +521,15 @@ def intertext(
     Example:
         biblecli intertext "Mc 16" -t fr --simil -b bj
     """
-    from src.application.services import BibleService
     import sys
 
     try:
-        service = BibleService()
+        bible_adapter = DependencyContainer.get_bible_adapter()
+        nlp_adapter = DependencyContainer.get_nlp_adapter()
+        normalizer = bible_adapter.normalizer
+        ref_db = DependencyContainer.get_ref_db()
     except Exception as e:
-        typer.secho(f"Error initializing service: {e}", fg=typer.colors.RED)
+        typer.secho(f"Error initializing dependencies: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
     french_v = None
@@ -568,7 +537,8 @@ def intertext(
         french_v = bible if bible else "tob"
         
     typer.echo(f"Scanning {book} for Intertextual relationships... (this may take a minute)")
-    results = service.analyze_intertextuality(book, french_version=french_v)
+    use_case = AnalyzeIntertextualityUseCase(bible_adapter, nlp_adapter, ref_db, normalizer)
+    results = use_case.execute(book, french_version=french_v)
     
     if not results:
         typer.secho(f"No intertextual connections found for {book}.", fg=typer.colors.YELLOW)
@@ -581,8 +551,8 @@ def intertext(
         if not r: return ""
         parts = r.split(".")
         if len(parts) >= 3:
-            n1904 = service.normalizer.code_to_n1904.get(parts[0], parts[0])
-            tob_name = service.normalizer.n1904_to_tob.get(n1904, parts[0])
+            n1904 = normalizer.code_to_n1904.get(parts[0], parts[0])
+            tob_name = normalizer.n1904_to_tob.get(n1904, parts[0])
             return f"{tob_name} {parts[1]}:{parts[2]}"
         return r
         
@@ -656,17 +626,17 @@ def greek(
     Displays morphological data (Case, Gender, Number, Tense, Mood, etc.),
     Part-of-Speech, Lemma, and syntactic dependency information.
     """
-    from src.application.services import BibleService
     import sys
 
     try:
-        service = BibleService()
+        nlp_adapter = DependencyContainer.get_nlp_adapter()
     except Exception as e:
-        typer.secho(f"Error initializing service: {e}", fg=typer.colors.RED)
+        typer.secho(f"Error initializing dependencies: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
     try:
-        results = service.greek_analysis(word)
+        use_case = AnalyzeGreekWordUseCase(nlp_adapter)
+        results = use_case.execute(word)
     except RuntimeError as e:
         typer.secho(f"Analysis failed: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)

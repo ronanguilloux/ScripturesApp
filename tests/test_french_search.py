@@ -111,10 +111,13 @@ def test_cli_find_french_tob():
         ]
     )
     
-    with patch("src.application.services.BibleService") as MockService:
-        mock_instance = MockService.return_value
-        mock_instance.find.return_value = mock_response
-        mock_instance.normalizer = None # Mock normalizer access if needed
+    with patch("src.cli.DependencyContainer") as MockDep, patch("src.cli.FindWordsUseCase") as MockUseCase:
+        mock_instance = MockUseCase.return_value
+        mock_instance.execute.return_value = mock_response
+        
+        mock_norm = MagicMock()
+        mock_norm.n1904_to_tob.get.return_value = "1 Rois"
+        MockDep.get_bible_adapter.return_value.normalizer = mock_norm
 
         result = runner.invoke(app, ["find", "élie", "-b", "tob"])
         
@@ -124,7 +127,7 @@ def test_cli_find_french_tob():
         assert "Elie, le Tishbite..." in result.stdout
         
         # Verify calls
-        mock_instance.find.assert_called_once_with(
+        mock_instance.execute.assert_called_once_with(
             query="élie",
             limit=20, # default
             bible="tob",
@@ -142,9 +145,9 @@ def test_cli_find_french_bj_upper():
         results=[]
     )
     
-    with patch("src.application.services.BibleService") as MockService:
-        mock_instance = MockService.return_value
-        mock_instance.find.return_value = mock_response
+    with patch("src.cli.DependencyContainer"), patch("src.cli.FindWordsUseCase") as MockUseCase:
+        mock_instance = MockUseCase.return_value
+        mock_instance.execute.return_value = mock_response
         
         result = runner.invoke(app, ["find", "test", "-b", "BJ"])
         
@@ -152,18 +155,18 @@ def test_cli_find_french_bj_upper():
         assert "No occurrences found for 'test'." in result.stdout
         
         # Verify calls
-        mock_instance.find.assert_called_once()
-        call_args = mock_instance.find.call_args[1]
-        assert call_args["bible"] == "BJ" # Helper passes it raw? Or lower? CLI passes raw. Service handles lower.
+        mock_instance.execute.assert_called_once()
+        call_args = mock_instance.execute.call_args[1]
+        assert call_args["bible"] == "BJ"
 
 def test_cli_find_invalid_bible():
     # BibleService.find raises ValueError for invalid inputs if logic is there.
     # But checking CLI arg validation logic.
     # In new CLI, we pass args to service. Service raises ValueError.
     
-    with patch("src.application.services.BibleService") as MockService:
-        mock_instance = MockService.return_value
-        mock_instance.find.side_effect = ValueError("Invalid french version: invalid. Use 'tob' or 'bj'.")
+    with patch("src.cli.DependencyContainer"), patch("src.cli.FindWordsUseCase") as MockUseCase:
+        mock_instance = MockUseCase.return_value
+        mock_instance.execute.side_effect = ValueError("Invalid french version: invalid. Use 'tob' or 'bj'.")
         
         result = runner.invoke(app, ["find", "test", "-b", "invalid"])
         assert result.exit_code == 1

@@ -1,92 +1,77 @@
 import pytest
 import json
-from unittest.mock import patch, MagicMock
-from src.application.services import BibleService
+from unittest.mock import MagicMock
+from src.application.use_cases.intertext import AnalyzeIntertextualityUseCase
 from src.domain.models import VerseItem, Verse
 
 class MockVerse:
     def __init__(self, text):
         self.text = text
 
-# Sample texts representing explicit citation (γραφω) and literal match
 NT_TEXT = "καὶ ἐδίδασκεν καὶ ἔλεγεν αὐτοῖς Οὐ γέγραπται ὅτι Ὁ οἶκός μου οἶκος προσευχῆς κληθήσεται πᾶσιν τοῖς ἔθνεσιν; ὑμεῖς δὲ πεποιήκατε αὐτὸν σπήλαιον λῃστῶν."
 OT_TEXT = "μὴ σπήλαιον λῃστῶν ὁ οἶκός μου οὗ ἐπικέκληται τὸ ὄνομά μου ἐπ’ αὐτῷ ἐκεῖ ἐνώπιον ὑμῶν καὶ ἐγὼ ἰδοὺ ἑώρακα λέγει κύριος"
 
 @pytest.fixture
-def bible_service_intertext():
-    with patch('src.application.services.AdapterFactory.get') as mock_get:
-        mock_adapter = MagicMock()
-        mock_adapter.normalizer.code_to_n1904 = {"MRK": "Mark", "JER": "Jeremiah"}
-        mock_adapter.normalizer.n1904_to_tob = {"Mark": "Mc", "Jeremiah": "Jr"}
-        mock_adapter.normalizer.is_nt = lambda code: code == "MRK"
-        mock_adapter.normalize_reference.side_effect = lambda ref: {
-            "Mc 11:17": ("MRK", 11, 17, "MRK.11.17"),
-            "Jr 7.11": ("JER", 7, 11, "JER.7.11")
-        }.get(ref, ("MRK", 11, 17, "MRK.11.17") if "Mc" in ref else ("JER", 7, 11, "JER.7.11"))
-        
-        # Mock verse fetching
-        def get_verse(b, c, v, version):
-            if b == "MRK": return MockVerse(NT_TEXT)
-            if b in ["JER", "MAL"]: return MockVerse(OT_TEXT)
-            return None
-            
-        mock_adapter.get_verse.side_effect = get_verse
-        mock_get.return_value = mock_adapter
-        
-        service = BibleService(adapter=mock_adapter)
-        
-        # Mock Ref DB
-        service.ref_db = MagicMock()
-        service.ref_db.in_memory_refs = {
-            "MRK.11.17": {
-                "relations": [{"target": "Jr 7.11"}]
-            }
-        }
-        
-        # Mock the subprocess worker since we don't want to load spacy in unit test
-        with patch('subprocess.run') as mock_run:
-            mock_result = MagicMock()
-            mock_result.returncode = 0
-            # Return a fake json result explicitly mocked with intertext flags E and L
-            mock_result.stdout = json.dumps([{
-                "id": "MRK.11.17 -> Jr 7.11", 
-                "matches": [{"lemma": "οἶκος", "target_words": ["οἶκός"]}],
-                "score": 1,
-                "similarity": 0.85,
-                "intertext_flags": ["E", "L"]
-            }])
-            mock_run.return_value = mock_result
-            
-            yield service, mock_run
-
-def test_analyze_intertextuality_success(bible_service_intertext):
-    service, mock_run = bible_service_intertext
+def use_case_intertext():
+    mock_adapter = MagicMock()
+    mock_adapter.normalizer.code_to_n1904 = {"MRK": "Mark", "JER": "Jeremiah"}
+    mock_adapter.normalizer.n1904_to_tob = {"Mark": "Mc", "Jeremiah": "Jr"}
+    mock_adapter.normalizer.is_nt = lambda code: code == "MRK"
+    mock_adapter.normalize_reference.side_effect = lambda ref: {
+        "Mc 11:17": ("MRK", 11, 17, "MRK.11.17"),
+        "Jr 7.11": ("JER", 7, 11, "JER.7.11")
+    }.get(ref, ("MRK", 11, 17, "MRK.11.17") if "Mc" in ref else ("JER", 7, 11, "JER.7.11"))
     
-    # We need to mock normalize_reference properly for "Mc" vs "Mc 11"
-    service.adapter.normalize_reference.side_effect = lambda ref: {
+    def get_verse(b, c, v, version):
+        if b == "MRK": return MockVerse(NT_TEXT)
+        if b in ["JER", "MAL"]: return MockVerse(OT_TEXT)
+        return None
+        
+    mock_adapter.get_verse.side_effect = get_verse
+    
+    ref_db = MagicMock()
+    ref_db.in_memory_refs = {
+        "MRK.11.17": {
+            "relations": [{"target": "Jr 7.11"}]
+        }
+    }
+    
+    mock_nlp = MagicMock()
+    mock_nlp.analyze_intertextuality.return_value = [{
+        "id": "MRK.11.17 -> Jr 7.11", 
+        "matches": [{"lemma": "οἶκος", "target_words": ["οἶκός"]}],
+        "score": 1,
+        "similarity": 0.85,
+        "intertext_flags": ["E", "L"]
+    }]
+    
+    use_case = AnalyzeIntertextualityUseCase(mock_adapter, mock_nlp, ref_db, mock_adapter.normalizer)
+    yield use_case, mock_nlp
+
+def test_analyze_intertextuality_success(use_case_intertext):
+    use_case, mock_nlp = use_case_intertext
+    
+    use_case.bible_provider.normalize_reference.side_effect = lambda ref: {
         "Mc": None,
         "Mc 1:1": ("MRK", 1, 1),
         "Mc 11": ("MRK", 11, 0),
         "Jr 7.11": ("JER", 7, 11),
     }.get(ref, None)
     
-    results = service.analyze_intertextuality("Mc")
+    results = use_case.execute("Mc")
     
-    # Assert worker was called
-    mock_run.assert_called_once()
-    kwargs = mock_run.call_args.kwargs
-    payload = json.loads(kwargs['input'])
+    mock_nlp.analyze_intertextuality.assert_called_once()
+    payload = mock_nlp.analyze_intertextuality.call_args[0][0]
     
     assert len(payload) == 1
     assert payload[0]["source_ref"] == "MRK.11.17"
     
-    # Assert output formatting and values
     assert len(results) == 1
     assert results[0]["similarity"] == 0.85
     assert results[0]["intertext_flags"] == ["E", "L"]
 
 def test_analyze_intertextuality_invalid_book():
-    service = BibleService() # real service init fails without adapter if data missing, but we can mock
-    with patch.object(service.adapter, 'normalize_reference', return_value=None):
-        with pytest.raises(ValueError, match="Unknown book abbreviation"):
-            service.analyze_intertextuality("InvalidBook")
+    use_case = AnalyzeIntertextualityUseCase(MagicMock(), MagicMock(), MagicMock(), MagicMock())
+    use_case.bible_provider.normalize_reference.return_value = None
+    with pytest.raises(ValueError, match="Unknown book abbreviation"):
+        use_case.execute("InvalidBook")
