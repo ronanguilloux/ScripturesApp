@@ -95,6 +95,18 @@ def main(
         - Verse range:   "Mt 5:1-10"
         - Whole chapter: "Mk 4"
         - Book aliases:  "Gn" = "Gen" = "Genesis", "Mt" = "Matt", etc.: both French and English abbreviations supported.
+
+    MAKE TASKS
+        The project includes a Makefile for convenience:
+
+        make install
+               Set up the environment and install dependencies.
+
+        make test
+               Run the test suite.
+
+        make run_macos
+               Build and run the native macOS application.
     """
     
     if ctx.invoked_subcommand is not None:

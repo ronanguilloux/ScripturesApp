@@ -6,7 +6,7 @@ Runs in the .venv-spacy (Python 3.13) environment.
 Called by the main CLI via subprocess.
 
 Usage:
-    .venv-spacy/bin/python3.13 src/application/workers/find_worker.py <word> [--limit N]
+    .venv-spacy/bin/python3.12 src/application/workers/find_worker.py <word> [--limit N]
 
 Output: JSON array of results to stdout.
 """

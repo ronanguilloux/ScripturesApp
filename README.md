@@ -441,6 +441,19 @@ It provides a Search Bar to quickly lookup verses without opening a terminal, an
 
 ## Build & Run
 
+You can run the app in several ways.
+
+### Using Make
+
+The simplest way to build and run the app is using the provided `Makefile` task:
+
+```bash
+make run_macos
+```
+This command changes to the `macos` directory, builds the Swift project, and runs the application.
+
+### Manually
+
 To run the app in debug mode (which also starts the local API server):
 
 ```bash

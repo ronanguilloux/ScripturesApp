@@ -21,6 +21,9 @@ def run_find(word, limit=5):
     """Run the find worker and return parsed JSON output."""
     worker_path = os.path.join(project_root, "src", "application", "workers", "find_worker.py")
     venv_python = os.path.join(project_root, ".venv-spacy", "bin", "python3")
+    if not os.path.exists(venv_python):
+        import sys
+        venv_python = sys.executable
     
     result = subprocess.run(
         [venv_python, worker_path, word, "--limit", str(limit)],
