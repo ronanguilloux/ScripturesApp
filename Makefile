@@ -23,7 +23,11 @@ test:
 	PYTHONPATH=. $(VENV_DIR)/bin/pytest
 
 run_macos:
-	cd macos && swift package clean && swift build && swift run
+	@if [ ! -d "$(VENV_DIR)" ]; then \
+		echo "Virtual environment not found. Installing dependencies..."; \
+		$(MAKE) install; \
+	fi
+	cd macos && swift build && swift run
 
 clean:
 	rm -rf $(VENV_DIR)
