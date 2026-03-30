@@ -1,4 +1,4 @@
-.PHONY: setup install test clean run_macos
+.PHONY: setup install test clean run_macos ngrok
 
 # Default shell
 SHELL := /bin/bash
@@ -31,3 +31,6 @@ run_macos:
 
 clean:
 	rm -rf $(VENV_DIR)
+
+ngrok:
+	ngrok http http://localhost:8000
