@@ -29,6 +29,10 @@ run_macos:
 	fi
 	cd macos && swift build && swift run
 
+rebuild:
+	rm -rf macos/.build
+	@$(MAKE) run_macos	
+
 clean:
 	rm -rf $(VENV_DIR)
 
