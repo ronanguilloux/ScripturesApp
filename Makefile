@@ -22,12 +22,14 @@ install: setup
 test:
 	PYTHONPATH=. $(VENV_DIR)/bin/pytest
 
-run_macos:
+macos:
 	@if [ ! -d "$(VENV_DIR)" ]; then \
 		echo "Virtual environment not found. Installing dependencies..."; \
 		$(MAKE) install; \
 	fi
+	@echo "Running macOS application..." 
 	cd macos && swift build && swift run
+	@echo "macos app running."
 
 rebuild:
 	rm -rf macos/.build
@@ -37,4 +39,10 @@ clean:
 	rm -rf $(VENV_DIR)
 
 ngrok:
+	@echo "Starting ngrok tunnel..."
 	ngrok http http://localhost:8000
+	@echo "webservice running."
+
+run:
+	$(MAKE) macos
+	$(MAKE) ngrok
