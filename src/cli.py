@@ -105,8 +105,8 @@ def main(
         make test
                Run the test suite.
 
-        make run_macos
-               Build and run the native macOS application.
+        make run
+               Build and run the native macOS application along with ngrok.
     """
     
     if ctx.invoked_subcommand is not None:

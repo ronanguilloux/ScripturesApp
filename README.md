@@ -445,12 +445,14 @@ You can run the app in several ways.
 
 ### Using Make
 
-The simplest way to build and run the app is using the provided `Makefile` task:
+The simplest way to build and run the app along with its necessary services is using the provided `Makefile` task:
 
 ```bash
-make run_macos
+make run
 ```
-This command changes to the `macos` directory, builds the Swift project, and runs the application.
+This command concurrently builds and runs the Swift macOS application and starts the `ngrok` tunnel using Make's parallel job execution (`-j 2`). 
+
+*Note: Since both the application build process and ngrok run in the same terminal session, their output may interleave.*
 
 ### Manually
 

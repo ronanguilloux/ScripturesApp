@@ -1,4 +1,4 @@
-.PHONY: setup install test clean run_macos ngrok
+.PHONY: setup install test clean macos rebuild ngrok run
 
 # Default shell
 SHELL := /bin/bash
@@ -33,7 +33,7 @@ macos:
 
 rebuild:
 	rm -rf macos/.build
-	@$(MAKE) run_macos	
+	@$(MAKE) macos	
 
 clean:
 	rm -rf $(VENV_DIR)
@@ -44,5 +44,4 @@ ngrok:
 	@echo "webservice running."
 
 run:
-	$(MAKE) macos
-	$(MAKE) ngrok
+	$(MAKE) -j 2 macos ngrok
