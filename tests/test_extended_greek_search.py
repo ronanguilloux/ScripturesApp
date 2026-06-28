@@ -8,6 +8,16 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.application.workers.find_worker import find_in_index, load_index
 
+_DATA_DIR      = os.path.join(os.path.dirname(__file__), "..", "data")
+NT_INDEX_PATH  = os.path.join(_DATA_DIR, "greek_index_nt.pkl.gz")
+LXX_INDEX_PATH = os.path.join(_DATA_DIR, "greek_index_lxx.pkl.gz")
+INDICES_BUILT  = os.path.exists(NT_INDEX_PATH) and os.path.exists(LXX_INDEX_PATH)
+
+pytestmark = pytest.mark.skipif(
+    not INDICES_BUILT,
+    reason="Greek index files not built. Run: make build-index"
+)
+
 def test_load_indices():
     """Verify indices can be loaded."""
     nt_index = load_index("NT")

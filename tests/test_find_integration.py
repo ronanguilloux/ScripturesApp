@@ -6,11 +6,21 @@ import subprocess
 import json
 import sys
 import os
+import pytest
 
 # Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
+_DATA_DIR      = os.path.join(os.path.dirname(__file__), "..", "data")
+NT_INDEX_PATH  = os.path.join(_DATA_DIR, "greek_index_nt.pkl.gz")
+LXX_INDEX_PATH = os.path.join(_DATA_DIR, "greek_index_lxx.pkl.gz")
+INDICES_BUILT  = os.path.exists(NT_INDEX_PATH) and os.path.exists(LXX_INDEX_PATH)
+
+pytestmark = pytest.mark.skipif(
+    not INDICES_BUILT,
+    reason="Greek index files not built. Run: make build-index"
+)
 
 import unicodedata
 
