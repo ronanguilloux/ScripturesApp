@@ -26,7 +26,7 @@ class MenuBarManager: NSObject, NSPopoverDelegate {
     
     private func setupPopover() {
         let popover = NSPopover()
-        // popover.contentSize = NSSize(width: 400, height: 600) // Let SwiftUI View dictate size
+        popover.contentSize = PopoverSize.stored
         popover.behavior = .transient // Closes on click outside (mostly)
         
         // Inject ContentView
@@ -60,6 +60,10 @@ class MenuBarManager: NSObject, NSPopoverDelegate {
     
     func showPopover(sender: AnyObject?) {
         if let button = statusItem?.button {
+            // NSPopover only keeps itself on-screen using the contentSize it knows at
+            // show() time. Without this it is positioned for a stale/default size, then
+            // SwiftUI grows it rightward off the screen edge.
+            popover?.contentSize = PopoverSize.stored
             popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             eventMonitor?.start()
             // Force focus
