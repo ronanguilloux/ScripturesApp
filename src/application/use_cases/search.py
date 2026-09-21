@@ -50,29 +50,29 @@ class SearchBibleUseCase:
              
         return target_str
 
-    def execute(
-        self, 
-        reference: str, 
-        translations: Optional[List[str]] = None,
-        version: str = "N1904",
-        french_version: Optional[str] = None,
-        show_crossrefs: bool = False,
-        crossref_full: bool = False,
-        crossref_source: Optional[str] = None
-    ) -> VerseResponse:
-        
+    def _chapter_verses(self, book, chap):
+        """All (book, chapter, verse) tuples of a chapter, in the corpus' own version."""
+        temp_v = 'N1904' if self.normalizer.is_nt(book) else 'BHSA'
+        objs = self.bible_provider.get_chapter(book, chap, temp_v)
+        if not objs and not self.normalizer.is_nt(book):
+            objs = self.bible_provider.get_chapter(book, chap, 'LXX')
+        return [(book, chap, v_obj.verse) for v_obj in (objs or [])]
+
+    def _expand_one(self, seg: str):
+        """One passage ('Lc 24', 'Lc 24:24', 'Lc 24:24-26', 'Lc 23-24') ->
+        (verses, book_code, chapter, verse). verse == 0 means chapter-level."""
         target_verses = []
         book_code = None
         chapter = None
         verse = None
-        
+
         parsed_range = False
-        if "-" in reference:
-            parts = reference.split("-")
+        if "-" in seg:
+            parts = seg.split("-")
             if len(parts) == 2:
                 start_s = parts[0].strip()
                 end_s = parts[1].strip()
-                
+
                 norm_start = self.bible_provider.normalize_reference(start_s)
                 if norm_start:
                     b_s, c_s, v_s = norm_start
@@ -89,28 +89,77 @@ class SearchBibleUseCase:
                              c_e = int(end_s)
                              if c_e >= c_s:
                                  for c in range(c_s, c_e + 1):
-                                     temp_v = 'N1904' if self.normalizer.is_nt(b_s) else 'BHSA'
-                                     objs = self.bible_provider.get_chapter(b_s, c, temp_v)
-                                     if not objs and not self.normalizer.is_nt(b_s):
-                                         objs = self.bible_provider.get_chapter(b_s, c, 'LXX')
-                                         
-                                     if objs:
-                                         for v_obj in objs:
-                                             target_verses.append((b_s, c, v_obj.verse))
-                                             
+                                     target_verses.extend(self._chapter_verses(b_s, c))
+
                                  parsed_range = True
                                  book_code, chapter, verse = b_s, c_s, 0
 
         if not parsed_range:
-             norm_ref = self.bible_provider.normalize_reference(reference)
+             norm_ref = self.bible_provider.normalize_reference(seg)
              if not norm_ref:
-                 raise ValueError(f"Invalid reference '{reference}'")
-     
+                 raise ValueError(f"Invalid reference '{seg}'")
+
              book_code, chapter, verse = norm_ref
-             
+
              if verse != 0:
                   target_verses.append((book_code, chapter, verse))
-        
+
+        return target_verses, book_code, chapter, verse
+
+    def _expand(self, reference: str):
+        """Multi-passage reference ('Lc 24:24-26;44', 'Lc 23:1-2;24:24-26') ->
+        (verses, book_code, chapter, verse) of the first passage.
+        A segment without any letter continues the previous one: it reuses its book,
+        and its chapter too when the segment is a bare verse number."""
+        segments = [s.strip() for s in reference.split(";") if s.strip()]
+        if not segments:
+            raise ValueError(f"Invalid reference '{reference}'")
+
+        all_verses = []
+        head = None
+        book = chapter = None
+        has_verse = False
+
+        for seg in segments:
+            if not any(ch.isalpha() for ch in seg):
+                if not book:
+                    raise ValueError(f"Invalid reference '{reference}'")
+                if ":" in seg or "." in seg or "," in seg:
+                    seg = f"{book} {seg}"
+                elif has_verse:
+                    seg = f"{book} {chapter}:{seg}"
+                else:
+                    raise ValueError(
+                        f"Ambiguous reference '{reference}': write 'Lc 23;Lc 24' for "
+                        f"chapters, or 'Lc 23:24' for a verse"
+                    )
+
+            verses, b, c, v = self._expand_one(seg)
+            # A whole chapter inside a list must be materialized now: the single-passage
+            # fallback in execute() only fires when nothing else was resolved.
+            if not verses and v == 0 and len(segments) > 1:
+                verses = self._chapter_verses(b, c)
+
+            all_verses.extend(verses)
+            book, chapter, has_verse = b, c, v != 0
+            if head is None:
+                head = (b, c, v)
+
+        return list(dict.fromkeys(all_verses)), *head
+
+    def execute(
+        self,
+        reference: str,
+        translations: Optional[List[str]] = None,
+        version: str = "N1904",
+        french_version: Optional[str] = None,
+        show_crossrefs: bool = False,
+        crossref_full: bool = False,
+        crossref_source: Optional[str] = None
+    ) -> VerseResponse:
+
+        target_verses, book_code, chapter, verse = self._expand(reference)
+
         is_nt = self.normalizer.is_nt(book_code)
         primary_v = version
         current_translations = translations or []
@@ -228,16 +277,28 @@ class SearchBibleUseCase:
         c_refs_model = None
         if (show_crossrefs or crossref_full) and verse != 0:
              s_filter = crossref_source
-             scope = 'nt' if is_nt else 'ot'
+             # load_all() clears its cache on every call, so resolve the scope once for
+             # the whole passage list; 'all' when it straddles OT and NT.
+             scopes = {'nt' if self.normalizer.is_nt(b) else 'ot' for b, _, _ in target_verses}
+             scope = scopes.pop() if len(scopes) == 1 else 'all'
              self.ref_db.load_all(source_filter=s_filter, scope=scope)
              
-             key = f"{book_code}.{chapter}.{verse}"
-             refs_dict = self.ref_db.in_memory_refs.get(key)
-             
-             if refs_dict:
-                 relations = []
+             notes = []
+             relations = []
+             seen = set()
+             for b, c, v in target_verses:
+                 refs_dict = self.ref_db.in_memory_refs.get(f"{b}.{c}.{v}")
+                 if not refs_dict: continue
+                 
+                 for n in refs_dict.get("notes", []):
+                     if n not in notes: notes.append(n)
+                 
                  for r in refs_dict.get("relations", []):
                      t_ref = r["target"]
+                     dedup_key = (t_ref, r.get("type"), r.get("note"))
+                     if dedup_key in seen: continue
+                     seen.add(dedup_key)
+                     
                      t_ref_loc = self._localize_ref(t_ref)
 
                      relations.append(CrossReferenceRelation(
@@ -246,9 +307,10 @@ class SearchBibleUseCase:
                        rel_type=CrossReferenceType(r.get("type", "parallel")),
                        note=r.get("note")
                      ))
-                 
+             
+             if notes or relations:
                  c_refs_model = VerseCrossReferences(
-                     notes=refs_dict.get("notes", []),
+                     notes=notes,
                      relations=relations
                  )
                  

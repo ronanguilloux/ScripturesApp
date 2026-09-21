@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.api.main import app, get_search_use_case
 from src.application.use_cases.search import SearchBibleUseCase
-from src.domain.models import Verse, Language
+from src.domain.models import Verse, Language, VerseResponse
 
 # Mock Data
 def create_mock_verse(book, version, text, lang):
@@ -200,3 +200,10 @@ def test_search_invalid_ref(client, mock_adapter):
         assert response.status_code in [400, 422, 500]
     except Exception:
         pass
+
+def test_search_semicolon_reaches_use_case(client, search_use_case):
+    """The ';' of a multi-passage reference must survive query-string parsing."""
+    with patch.object(search_use_case, 'execute') as mock_exec:
+        mock_exec.return_value = VerseResponse(reference="Lc 24:24-26;44", verses=[])
+        client.get("/api/v1/search?q=Lc 24:24-26;44")
+        assert mock_exec.call_args.kwargs["reference"] == "Lc 24:24-26;44"

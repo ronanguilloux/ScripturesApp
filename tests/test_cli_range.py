@@ -33,3 +33,37 @@ def test_cli_range_output():
     
     # Mk 7:10 "Car Moïse a dit..."
     assert "Marc 7:10" not in output
+
+def test_cli_multi_passage_same_chapter():
+    """'Lc 24:24-26;44' -> verses 24-26 then 44 of Luke 24, nothing else."""
+    result = subprocess.run(["bin/biblecli", "Lc 24:24-26;44"], capture_output=True, text=True)
+
+    assert result.returncode == 0, f"Command failed with output: {result.stderr}"
+    output = result.stdout
+
+    for ref in ["Luc 24:24", "Luc 24:25", "Luc 24:26", "Luc 24:44"]:
+        assert ref in output, f"{ref} missing"
+
+    for ref in ["Luc 24:23", "Luc 24:27", "Luc 24:43", "Luc 24:45"]:
+        assert ref not in output, f"{ref} should not be displayed"
+
+
+def test_cli_multi_passage_other_chapter():
+    """'Lc 23:1-2;24:24-26' -> Luke 23:1-2 then Luke 24:24-26."""
+    result = subprocess.run(["bin/biblecli", "Lc 23:1-2;24:24-26"], capture_output=True, text=True)
+
+    assert result.returncode == 0, f"Command failed with output: {result.stderr}"
+    output = result.stdout
+
+    for ref in ["Luc 23:1", "Luc 23:2", "Luc 24:24", "Luc 24:25", "Luc 24:26"]:
+        assert ref in output, f"{ref} missing"
+
+    for ref in ["Luc 23:3", "Luc 24:23", "Luc 24:27"]:
+        assert ref not in output, f"{ref} should not be displayed"
+
+
+def test_cli_ambiguous_continuation_errors():
+    """'Lc 23;24' is ambiguous (chapter 24 or verse 24?) -> explicit error, not a guess."""
+    result = subprocess.run(["bin/biblecli", "Lc 23;24"], capture_output=True, text=True)
+
+    assert result.returncode == 1
