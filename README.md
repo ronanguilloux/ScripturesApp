@@ -436,8 +436,44 @@ It provides a Search Bar to quickly lookup verses without opening a terminal, an
 
 ## Requirements
 - macOS 12.0 (Monterey) or later.
-- Swift 5.9+ (installed via Xcode or Command Line Tools).
+- **Xcode** — a full install, *not* just the Command Line Tools. See [Toolchain](#toolchain-xcode-is-required) below.
 - Python 3.8+ (for the backend).
+
+## Toolchain: Xcode is required
+
+Command Line Tools alone are **not** sufficient to build the app. Since the macOS 26
+SDK, SwiftUI's `@State` is a Swift macro rather than a property wrapper, and the
+compiler plugin that implements it (`libSwiftUIMacros.dylib`) ships only inside
+`Xcode.app`, under
+`Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/`.
+
+With Command Line Tools selected, the build fails on *every* `@State` declaration:
+
+```text
+error: external macro implementation type 'SwiftUIMacros.StateMacro' could not be
+found for macro 'State()'; plugin for module 'SwiftUIMacros' not found
+```
+
+This is a toolchain gap, not a code error — no source change will fix it.
+
+**Fix:** install Xcode, then point the active developer directory at it:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+sudo xcodebuild -license accept
+```
+
+**Verify** — this must print the Xcode path, not `/Library/Developer/CommandLineTools`:
+
+```bash
+xcode-select -p
+```
+
+**Without `sudo`** (one-off, handy in CI or to test before switching system-wide):
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+```
 
 ## Build & Run
 
@@ -445,12 +481,22 @@ You can run the app in several ways.
 
 ### Using Make
 
-The simplest way to build and run the app along with its necessary services is using the provided `Makefile` task:
+Build and run just the app — it starts the Python backend itself, so no separate
+server terminal is needed:
+
+```bash
+make macos
+```
+
+To run the app **and** an `ngrok` tunnel together:
 
 ```bash
 make run
 ```
 This command concurrently builds and runs the Swift macOS application and starts the `ngrok` tunnel using Make's parallel job execution (`-j 2`). 
+
+`make rebuild` wipes `macos/.build` and rebuilds from scratch — only needed after a
+toolchain or SDK change.
 
 *Note: Since both the application build process and ngrok run in the same terminal session, their output may interleave.*
 
