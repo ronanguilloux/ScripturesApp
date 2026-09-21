@@ -27,6 +27,7 @@ class CrossReferenceRelationDTO(BaseModel):
     rel_type: CrossReferenceType
     note: Optional[str] = None
     text: Optional[str] = None
+    target_ref_margin: Optional[str] = None
     model_config = ConfigDict(frozen=True)
 
 class VerseCrossReferencesDTO(BaseModel):
@@ -37,6 +38,7 @@ class VerseItemDTO(BaseModel):
     ref: str
     primary: VerseDTO
     parallels: List[VerseDTO] = Field(default_factory=list)
+    cross_references: Optional[VerseCrossReferencesDTO] = None
     model_config = ConfigDict(frozen=True)
 
 class VerseResponseDTO(BaseModel):

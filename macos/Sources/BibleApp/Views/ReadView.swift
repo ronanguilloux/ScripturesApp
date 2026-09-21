@@ -20,8 +20,20 @@ struct ReadView: View {
     @State private var frenchVersion: String = "tob" // Default to TOB
     @State private var showCrossRefs = false
     @State private var showFullCrossRefs = false
+    @State private var crossRefSource: String = "tob"
     @State private var displayMode: DisplayMode = .classic
     @State private var showSettings = false // For Settings Sheet
+
+    /// Target verse texts fetched on hover, keyed by target_ref.
+    @State private var previewCache: [String: String] = [:]
+
+    /// ContentView owns and persists the popover width; the gutter only needs to read it.
+    @AppStorage("windowWidth_v2") private var windowWidth: Double = 600
+
+    /// A BJ margin is a narrow outer column. Below this the text would be strangled,
+    /// so the references fall back to a line above the verse.
+    private var showGutter: Bool { windowWidth >= 460 }
+    private let gutterWidth: CGFloat = 78
 
     @FocusState private var isFocused: Bool
     
@@ -78,16 +90,29 @@ struct ReadView: View {
                     }
                     .toggleStyle(.button)
                     .controlSize(.mini)
-                    .help("Show Cross-References (-c)")
+                    .help("Renvois en marge (-c)")
                     .onChange(of: showCrossRefs) { _ in performSearch() }
                     
                     if showCrossRefs {
+                        // TOB is curated at BJ density (1-3 per verse); openbible can
+                        // carry 30+ on one verse and is capped server-side.
+                        Picker("", selection: $crossRefSource) {
+                            Text("TOB").tag("tob")
+                            Text("OpenBible").tag("openbible")
+                            Text("Toutes").tag("all")
+                        }
+                        .pickerStyle(.menu)
+                        .controlSize(.mini)
+                        .frame(width: 95)
+                        .help("Source des renvois")
+                        .onChange(of: crossRefSource) { _ in performSearch() }
+
                         Toggle(isOn: $showFullCrossRefs) {
                             Image(systemName: "text.alignleft")
                         }
                         .toggleStyle(.button)
                         .controlSize(.mini)
-                        .help("Show Full Text (-f)")
+                        .help("Liste détaillée sous le passage (-f)")
                         .onChange(of: showFullCrossRefs) { _ in performSearch() }
                     }
                 }
@@ -119,6 +144,8 @@ struct ReadView: View {
             Divider()
             
             // Results OR Prompt
+            // ScrollViewReader so a footnote call can jump to its note.
+            ScrollViewReader { proxy in
             ScrollView {
                 if let response = verseResponse {
                     VStack(alignment: .leading, spacing: 20) {
@@ -137,43 +164,84 @@ struct ReadView: View {
                             .controlSize(.small)
                         }
                         
+                        let letters = noteLetters(response)
+
                         ForEach(response.verses) { item in
-                            VStack(alignment: .leading, spacing: 4) {
-                                // Header (Classic & Compact Only)
-                                if displayMode != .textOnly {
-                                    if displayMode == .compact {
-                                         // vX.
-                                         Text("v\(item.primary.verse).")
-                                            .font(.headline)
-                                            .foregroundColor(.green)
-                                    } else {
-                                         // Classic: Book Chapter:Verse
-                                         Text("\(item.primary.bookName ?? item.primary.book) \(item.primary.chapter):\(item.primary.verse)")
-                                            .font(.headline)
-                                            .foregroundColor(.green)
-                                    }
+                            // .firstTextBaseline sits the top reference on the baseline of
+                            // the verse block's first line -- the BJ anchor, for free.
+                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                if showCrossRefs && showGutter {
+                                    marginGutter(for: item)
+                                        .frame(width: gutterWidth, alignment: .trailing)
                                 }
-                                
-                                // Primary Text
-                                Text(item.primary.text)
-                                    .font(.body)
-                                    .textSelection(.enabled)
-                                
-                                // Parallels
-                                ForEach(item.parallels, id: \.version) { p in
-                                    Text(p.text)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    // Header (Classic & Compact Only)
+                                    if displayMode != .textOnly {
+                                        if displayMode == .compact {
+                                             // vX.
+                                             Text("v\(item.primary.verse).")
+                                                .font(.headline)
+                                                .foregroundColor(.green)
+                                        } else {
+                                             // Classic: Book Chapter:Verse
+                                             Text("\(item.primary.bookName ?? item.primary.book) \(item.primary.chapter):\(item.primary.verse)")
+                                                .font(.headline)
+                                                .foregroundColor(.green)
+                                        }
+                                    }
+
+                                    if showCrossRefs && !showGutter {
+                                        inlineRefs(for: item)
+                                    }
+
+                                    // Primary Text, with the footnote call at the end of the
+                                    // verse: TOB notes carry a verse_ref, never a word offset,
+                                    // so the BJ's mid-sentence placement is not reconstructible.
+                                    Text(verseText(item, letter: letters[item.ref]))
                                         .font(.body)
-                                        .foregroundColor(.secondary)
                                         .textSelection(.enabled)
+
+                                    // Parallels
+                                    ForEach(item.parallels, id: \.version) { p in
+                                        Text(p.text)
+                                            .font(.body)
+                                            .foregroundColor(.secondary)
+                                            .textSelection(.enabled)
+                                    }
                                 }
                             }
                             .padding(.bottom, 8)
                         }
-                        
+
+                        // Footnotes, lettered in the order the verses appear
+                        if !letters.isEmpty {
+                            Divider()
+                            VStack(alignment: .leading, spacing: 6) {
+                                ForEach(response.verses) { item in
+                                    if let letter = letters[item.ref],
+                                       let notes = item.crossReferences?.notes, !notes.isEmpty {
+                                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                            Text(letter)
+                                                .font(.caption2)
+                                                .bold()
+                                                .foregroundColor(.accentColor)
+                                            Text(notes.joined(separator: " "))
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .textSelection(.enabled)
+                                        }
+                                        .id("note-\(letter)")
+                                    }
+                                }
+                            }
+                        }
+
                         Divider()
                         
-                        // Cross References
-                        if let refs = response.crossReferences, !refs.relations.isEmpty {
+                        // Cross References -- the detailed list is now the "full" mode only;
+                        // plain -c puts the references in the margin instead.
+                        if showFullCrossRefs, let refs = response.crossReferences, !refs.relations.isEmpty {
                             HStack {
                                 Text("Cross References")
                                     .font(.subheadline)
@@ -231,6 +299,13 @@ struct ReadView: View {
                         .padding(.top, 40)
                 }
             }
+            .environment(\.openURL, OpenURLAction { url in
+                guard url.scheme == "scriptures", url.host == "note" else { return .systemAction }
+                let letter = url.lastPathComponent
+                withAnimation { proxy.scrollTo("note-\(letter)", anchor: .center) }
+                return .handled
+            })
+            }
             
             Divider()
             
@@ -257,6 +332,115 @@ struct ReadView: View {
         }
     }
     
+    // MARK: - BJ-style margin
+
+    /// The outer column: one reference per line, right-aligned against the text,
+    /// stacked in the order the server sorted them.
+    @ViewBuilder
+    private func marginGutter(for item: VerseItem) -> some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            ForEach(item.crossReferences?.relations ?? []) { rel in
+                refLabel(rel)
+            }
+        }
+    }
+
+    /// Narrow-window fallback: the same references, laid out above the verse.
+    @ViewBuilder
+    private func inlineRefs(for item: VerseItem) -> some View {
+        let rels = item.crossReferences?.relations ?? []
+        if !rels.isEmpty {
+            HStack(spacing: 8) {
+                ForEach(rels) { rel in
+                    refLabel(rel)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private func refLabel(_ rel: CrossReferenceRelation) -> some View {
+        Text(rel.marginLabel)
+            .font(.caption2)
+            .foregroundColor(.secondary)
+            .lineLimit(1)
+            .help(previewText(for: rel))
+            .onHover { inside in
+                if inside { fetchPreview(rel) }
+            }
+            .onTapGesture { navigate(to: rel) }
+    }
+
+    /// Clicking a reference reads it. The margin label may be elided ("2:33"),
+    /// which the parser cannot resolve -- navigate with the full localized form.
+    private func navigate(to rel: CrossReferenceRelation) {
+        searchText = rel.targetRefLocalized ?? rel.targetRef
+        performSearch()
+    }
+
+    private func previewText(for rel: CrossReferenceRelation) -> String {
+        if let cached = previewCache[rel.targetRef] { return cached }
+        if let t = rel.text, !t.isEmpty { return t }
+        return rel.targetRefLocalized ?? rel.targetRef
+    }
+
+    /// Hovering a reference fetches the target verse once, through the same
+    /// endpoint the view already uses. No preloading: a chapter can carry
+    /// dozens of references nobody will ever point at.
+    private func fetchPreview(_ rel: CrossReferenceRelation) {
+        let key = rel.targetRef
+        guard previewCache[key] == nil else { return }
+        previewCache[key] = (rel.targetRefLocalized ?? key) + "…"
+
+        var comp = URLComponents(string: "http://127.0.0.1:8000/api/v1/search")!
+        comp.queryItems = [
+            URLQueryItem(name: "q", value: rel.targetRefLocalized ?? key),
+            URLQueryItem(name: "tr", value: "fr"),
+            URLQueryItem(name: "bible", value: frenchVersion)
+        ]
+        guard let url = comp.url else { return }
+
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            guard let data = data,
+                  let decoded = try? JSONDecoder().decode(VerseResponse.self, from: data)
+            else { return }
+            let body = decoded.verses.map { $0.primary.text }.joined(separator: " ")
+            let label = rel.targetRefLocalized ?? key
+            DispatchQueue.main.async {
+                previewCache[key] = body.isEmpty ? label : "\(label) — \(body)"
+            }
+        }.resume()
+    }
+
+    /// One letter per annotated verse, in reading order, as the BJ letters its
+    /// footnotes down the page.
+    private func noteLetters(_ response: VerseResponse) -> [String: String] {
+        let alphabet = Array("abcdefghijklmnopqrstuvwxyz")
+        var out: [String: String] = [:]
+        var index = 0
+        for item in response.verses {
+            guard let notes = item.crossReferences?.notes, !notes.isEmpty else { continue }
+            out[item.ref] = String(alphabet[index % alphabet.count])
+            index += 1
+        }
+        return out
+    }
+
+    private func verseText(_ item: VerseItem, letter: String?) -> AttributedString {
+        var full = AttributedString(item.primary.text)
+        guard let letter = letter else { return full }
+
+        var mark = AttributedString(letter)
+        mark.font = .caption2
+        mark.baselineOffset = 5
+        mark.foregroundColor = .accentColor
+        mark.link = URL(string: "scriptures://note/\(letter)")
+
+        full += AttributedString(" ")
+        full += mark
+        return full
+    }
+
     // Helper for Set binding
     private func binding(for lang: String) -> Binding<Bool> {
         Binding(
@@ -275,6 +459,7 @@ struct ReadView: View {
         isLoading = true
         errorMessage = nil
         verseResponse = nil
+        previewCache.removeAll()
         
         let query = searchText
         
@@ -296,6 +481,9 @@ struct ReadView: View {
         }
         if showFullCrossRefs {
             queryItems.append(URLQueryItem(name: "crossref_full", value: "true"))
+        }
+        if showCrossRefs && crossRefSource != "all" {
+            queryItems.append(URLQueryItem(name: "crossref_source", value: crossRefSource))
         }
         
         urlComp.queryItems = queryItems

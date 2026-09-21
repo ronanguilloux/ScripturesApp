@@ -48,8 +48,9 @@ def get_valid_source_verse(digits_str, chapter):
             continue
     return None
 
-def parse_relations_from_content(content):
+def parse_relations_from_content(content, book_code=None):
     relations = []
+    book_code = book_code or CURRENT_BOOK_CODE
     
     # Normalize non-breaking spaces to normal spaces so regex matches "2 Co" correctly
     content = content.replace('\u00a0', ' ')
@@ -79,7 +80,7 @@ def parse_relations_from_content(content):
     # Groups: 1=Book, 2=Ref, 3=Separator
     token_re = re.compile(f"({book_pattern})|({ref_pattern})|({sep_pattern})")
     
-    current_book = CURRENT_BOOK_CODE
+    current_book = book_code
     
     for m in token_re.finditer(content):
         g_book = m.group(1)
@@ -90,12 +91,16 @@ def parse_relations_from_content(content):
             current_book = BOOK_MAP[g_book]
             
         elif g_sep:
-            # Reset context to default book (Mark)
-            current_book = CURRENT_BOOK_CODE
+            # Reset context to the book being parsed
+            current_book = book_code
             
         elif g_ref:
             raw_ref = g_ref
-            ref_clean = raw_ref.replace('+', '')
+            ref_clean = raw_ref
+            # TOB/BJ mark a reference that carries an explanatory note with a
+            # trailing '+'. The ref regex never swallows it, so read it from the
+            # character right after the match.
+            has_note_marker = content[m.end():m.end() + 1] == '+'
             
             # Simple fix for ranges with no book:
             # If we had "8.29-30", ref_clean is "8.29-30".
@@ -138,16 +143,19 @@ def parse_relations_from_content(content):
             relations.append({
                 "target": target,
                 "type": "parallel",
-                "note": ""
+                "note": "+" if has_note_marker else ""
             })
             
     # Deduplicate relations based on target
-    seen_targets = set()
+    seen_targets = {}
     unique_relations = []
     for r in relations:
-        if r["target"] not in seen_targets:
+        kept = seen_targets.get(r["target"])
+        if kept is None:
             unique_relations.append(r)
-            seen_targets.add(r["target"])
+            seen_targets[r["target"]] = r
+        elif r["note"] and not kept["note"]:
+            kept["note"] = r["note"]  # a later occurrence carried the '+'
             
     return unique_relations
 

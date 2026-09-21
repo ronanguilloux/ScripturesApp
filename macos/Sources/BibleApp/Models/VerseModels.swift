@@ -19,6 +19,14 @@ struct VerseItem: Codable, Identifiable {
     let ref: String
     let primary: VerseContent
     let parallels: [VerseContent]
+    /// Cross-references belonging to THIS verse, already capped for margin display.
+    /// VerseResponse.crossReferences keeps the uncapped aggregate for the passage.
+    let crossReferences: VerseCrossReferences?
+
+    enum CodingKeys: String, CodingKey {
+        case ref, primary, parallels
+        case crossReferences = "cross_references"
+    }
 }
 
 // MARK: - VerseContent
@@ -42,24 +50,42 @@ struct VerseContent: Codable {
 
 // MARK: - VerseCrossReferences
 struct VerseCrossReferences: Codable {
+    let notes: [String]
     let relations: [CrossReferenceRelation]
+
+    // The API always sends both keys, but a decode failure here blanks the whole
+    // passage, so treat either as optional rather than trust the contract.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        notes = try c.decodeIfPresent([String].self, forKey: .notes) ?? []
+        relations = try c.decodeIfPresent([CrossReferenceRelation].self, forKey: .relations) ?? []
+    }
 }
 
 // MARK: - CrossReferenceRelation
 struct CrossReferenceRelation: Codable, Identifiable {
-    var id: String { targetRef }
+    // The server dedupes on (target, type, note), so targetRef alone collides and
+    // makes ForEach drop rows. Key on the same triple it deduped with.
+    var id: String { "\(targetRef)|\(relType)|\(note ?? "")" }
     let targetRef: String
     let targetRefLocalized: String?
     let relType: String
     let note: String?
     let text: String?
-    
+    /// Short BJ-style label: book dropped when it repeats the book being read or
+    /// the reference above it, '+' kept when the reference carries a note.
+    let targetRefMargin: String?
+
+    /// What the margin column prints, falling back as the data thins out.
+    var marginLabel: String { targetRefMargin ?? targetRefLocalized ?? targetRef }
+
     enum CodingKeys: String, CodingKey {
         case targetRef = "target_ref"
         case targetRefLocalized = "target_ref_localized"
         case relType = "rel_type"
         case note
         case text
+        case targetRefMargin = "target_ref_margin"
     }
 }
 

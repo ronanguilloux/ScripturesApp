@@ -1,3 +1,4 @@
+import dataclasses
 from typing import List, Optional
 from src.domain.models import VerseResponse, VerseItem, VerseCrossReferences, CrossReferenceRelation, CrossReferenceType
 from src.ports.bible_provider import BibleProvider
@@ -9,6 +10,48 @@ class SearchBibleUseCase:
         self.bible_provider = bible_provider
         self.ref_db = ref_db
         self.normalizer = normalizer
+
+    def _book_label(self, book_code: str) -> str:
+        """The French abbreviation _localize_ref puts at the head of a reference."""
+        n1904 = self.normalizer.code_to_n1904.get(book_code, book_code)
+        return self.normalizer.n1904_to_tob.get(n1904, book_code)
+
+    def _margin_labels(self, relations, current_book):
+        """Apply the BJ margin convention to one verse's stack of references.
+
+        A reference drops its book name when it repeats the book being read
+        ('2:33' for Ac 2,33 while reading Acts) or the book of the reference just
+        above it in the same stack ('Rm 7:5' then '11:27'). A '+' marker, meaning
+        the reference carries an explanatory note, is kept.
+        """
+        out = []
+        previous_book = None
+        for rel in relations:
+            label = rel.target_ref_localized or rel.target_ref
+
+            # Only a canonical "BOOK.C.V" target tells us its book; anything else
+            # (a hand-written "Jn 1:1" in a personal collection) goes through as-is.
+            if "." not in rel.target_ref:
+                out.append(dataclasses.replace(rel, target_ref_margin=label))
+                previous_book = None
+                continue
+
+            book = rel.target_ref.split(".")[0]
+
+            # _localize_ref spells the book out ("Joël 3:1-5"); a margin needs the
+            # abbreviation the BJ uses ("Jl 3:1-5"). Strip the full name, re-prefix
+            # with the abbreviation unless the convention elides it.
+            full = self._book_label(book) + " "
+            if label.startswith(full):
+                label = label[len(full):]
+                if book != current_book and book != previous_book:
+                    label = f"{self.normalizer.code_to_fr_abbr.get(book, book)} {label}"
+
+            if rel.note == "+":
+                label += "+"
+            out.append(dataclasses.replace(rel, target_ref_margin=label))
+            previous_book = book
+        return out
 
     def _localize_ref(self, target_str: str) -> str:
         if not target_str: return ""
@@ -155,7 +198,8 @@ class SearchBibleUseCase:
         french_version: Optional[str] = None,
         show_crossrefs: bool = False,
         crossref_full: bool = False,
-        crossref_source: Optional[str] = None
+        crossref_source: Optional[str] = None,
+        crossref_max: int = 3
     ) -> VerseResponse:
 
         target_verses, book_code, chapter, verse = self._expand(reference)
@@ -275,53 +319,70 @@ class SearchBibleUseCase:
                 pass
         
         c_refs_model = None
-        if (show_crossrefs or crossref_full) and verse != 0:
+        per_verse_refs = {}
+        # No `verse != 0` gate: a whole chapter is materialized into target_verses
+        # above, and each of its verses deserves its own margin.
+        if show_crossrefs or crossref_full:
              s_filter = crossref_source
              # load_all() clears its cache on every call, so resolve the scope once for
              # the whole passage list; 'all' when it straddles OT and NT.
              scopes = {'nt' if self.normalizer.is_nt(b) else 'ot' for b, _, _ in target_verses}
              scope = scopes.pop() if len(scopes) == 1 else 'all'
              self.ref_db.load_all(source_filter=s_filter, scope=scope)
-             
+
+             def sort_key(rel):
+                 parsed = self.bible_provider.normalize_reference(rel.target_ref)
+                 if parsed:
+                     bk, ch, vs = parsed
+                     order = self.normalizer.book_order.get(bk, 999)
+                     return (0, order, ch, vs)
+                 return (1, rel.target_ref)
+
+             def build(r):
+                 return CrossReferenceRelation(
+                     target_ref=r["target"],
+                     target_ref_localized=self._localize_ref(r["target"]),
+                     rel_type=CrossReferenceType(r.get("type", "parallel")),
+                     note=r.get("note")
+                 )
+
              notes = []
              relations = []
              seen = set()
              for b, c, v in target_verses:
                  refs_dict = self.ref_db.in_memory_refs.get(f"{b}.{c}.{v}")
                  if not refs_dict: continue
-                 
-                 for n in refs_dict.get("notes", []):
+
+                 raw = refs_dict.get("relations", [])
+                 v_notes = list(refs_dict.get("notes", []))
+
+                 # ponytail: openbible stores relations in vote-rank order and can carry
+                 # 30+ on a single verse, where the BJ margin shows 2 or 3. Cap on that
+                 # order BEFORE sorting canonically, so the cut keeps the best-ranked.
+                 # Rank is positional only -- if a source ever ships an explicit score,
+                 # rank on it here instead.
+                 v_relations = [build(r) for r in raw[:crossref_max]]
+                 v_relations.sort(key=sort_key)
+                 v_relations = self._margin_labels(v_relations, b)
+                 if v_notes or v_relations:
+                     per_verse_refs[f"{b}.{c}.{v}"] = VerseCrossReferences(
+                         notes=v_notes, relations=v_relations
+                     )
+
+                 for n in v_notes:
                      if n not in notes: notes.append(n)
-                 
-                 for r in refs_dict.get("relations", []):
-                     t_ref = r["target"]
-                     dedup_key = (t_ref, r.get("type"), r.get("note"))
+
+                 for r in raw:
+                     dedup_key = (r["target"], r.get("type"), r.get("note"))
                      if dedup_key in seen: continue
                      seen.add(dedup_key)
-                     
-                     t_ref_loc = self._localize_ref(t_ref)
+                     relations.append(build(r))
 
-                     relations.append(CrossReferenceRelation(
-                       target_ref=t_ref,
-                       target_ref_localized=t_ref_loc,
-                       rel_type=CrossReferenceType(r.get("type", "parallel")),
-                       note=r.get("note")
-                     ))
-             
              if notes or relations:
                  c_refs_model = VerseCrossReferences(
                      notes=notes,
                      relations=relations
                  )
-                 
-                 def sort_key(rel):
-                     parsed = self.bible_provider.normalize_reference(rel.target_ref)
-                     if parsed:
-                         bk, ch, vs = parsed
-                         order = self.normalizer.book_order.get(bk, 999)
-                         return (0, order, ch, vs)
-                     return (1, rel.target_ref)
-                 
                  c_refs_model.relations.sort(key=sort_key)
                  
                  if crossref_full:
@@ -420,6 +481,17 @@ class SearchBibleUseCase:
                          ))
                      
                      c_refs_model.relations = new_relations
+
+        if per_verse_refs:
+            verses_data = [
+                dataclasses.replace(
+                    item,
+                    cross_references=per_verse_refs.get(
+                        f"{item.primary.book_code}.{item.primary.chapter}.{item.primary.verse}"
+                    )
+                )
+                for item in verses_data
+            ]
 
         return VerseResponse(
             reference=reference,

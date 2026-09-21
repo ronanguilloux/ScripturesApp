@@ -130,6 +130,20 @@
               "title": "Crossref Source"
             },
             "description": "Filter cross-references by source"
+          },
+          {
+            "name": "crossref_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "Max cross-references kept per verse for margin display",
+              "default": 3,
+              "title": "Crossref Max"
+            },
+            "description": "Max cross-references kept per verse for margin display"
           }
         ],
         "responses": {
@@ -138,7 +152,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/VerseResponse"
+                  "$ref": "#/components/schemas/VerseResponseDTO"
                 }
               }
             }
@@ -249,7 +263,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FindResponse"
+                  "$ref": "#/components/schemas/FindResponseDTO"
                 }
               }
             }
@@ -312,7 +326,7 @@
   },
   "components": {
     "schemas": {
-      "CrossReferenceRelation": {
+      "CrossReferenceRelationDTO": {
         "properties": {
           "target_ref": {
             "type": "string",
@@ -353,6 +367,17 @@
               }
             ],
             "title": "Text"
+          },
+          "target_ref_margin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Ref Margin"
           }
         },
         "type": "object",
@@ -360,7 +385,7 @@
           "target_ref",
           "rel_type"
         ],
-        "title": "CrossReferenceRelation"
+        "title": "CrossReferenceRelationDTO"
       },
       "CrossReferenceType": {
         "type": "string",
@@ -372,7 +397,7 @@
         ],
         "title": "CrossReferenceType"
       },
-      "FindResponse": {
+      "FindResponseDTO": {
         "properties": {
           "lemma": {
             "type": "string",
@@ -397,7 +422,7 @@
           },
           "results": {
             "items": {
-              "$ref": "#/components/schemas/FindResultItem"
+              "$ref": "#/components/schemas/FindResultItemDTO"
             },
             "type": "array",
             "title": "Results"
@@ -409,9 +434,9 @@
           "original",
           "total"
         ],
-        "title": "FindResponse"
+        "title": "FindResponseDTO"
       },
-      "FindResultItem": {
+      "FindResultItemDTO": {
         "properties": {
           "ref": {
             "type": "string",
@@ -461,7 +486,7 @@
           "verse",
           "text"
         ],
-        "title": "FindResultItem"
+        "title": "FindResultItemDTO"
       },
       "HTTPValidationError": {
         "properties": {
@@ -527,7 +552,27 @@
         ],
         "title": "ValidationError"
       },
-      "Verse": {
+      "VerseCrossReferencesDTO": {
+        "properties": {
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "relations": {
+            "items": {
+              "$ref": "#/components/schemas/CrossReferenceRelationDTO"
+            },
+            "type": "array",
+            "title": "Relations"
+          }
+        },
+        "type": "object",
+        "title": "VerseCrossReferencesDTO"
+      },
+      "VerseDTO": {
         "properties": {
           "book_code": {
             "type": "string",
@@ -589,43 +634,33 @@
           "language",
           "version"
         ],
-        "title": "Verse"
+        "title": "VerseDTO"
       },
-      "VerseCrossReferences": {
-        "properties": {
-          "notes": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Notes"
-          },
-          "relations": {
-            "items": {
-              "$ref": "#/components/schemas/CrossReferenceRelation"
-            },
-            "type": "array",
-            "title": "Relations"
-          }
-        },
-        "type": "object",
-        "title": "VerseCrossReferences"
-      },
-      "VerseItem": {
+      "VerseItemDTO": {
         "properties": {
           "ref": {
             "type": "string",
             "title": "Ref"
           },
           "primary": {
-            "$ref": "#/components/schemas/Verse"
+            "$ref": "#/components/schemas/VerseDTO"
           },
           "parallels": {
             "items": {
-              "$ref": "#/components/schemas/Verse"
+              "$ref": "#/components/schemas/VerseDTO"
             },
             "type": "array",
             "title": "Parallels"
+          },
+          "cross_references": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerseCrossReferencesDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -633,9 +668,9 @@
           "ref",
           "primary"
         ],
-        "title": "VerseItem"
+        "title": "VerseItemDTO"
       },
-      "VerseResponse": {
+      "VerseResponseDTO": {
         "properties": {
           "reference": {
             "type": "string",
@@ -643,7 +678,7 @@
           },
           "verses": {
             "items": {
-              "$ref": "#/components/schemas/VerseItem"
+              "$ref": "#/components/schemas/VerseItemDTO"
             },
             "type": "array",
             "title": "Verses"
@@ -651,7 +686,7 @@
           "cross_references": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/VerseCrossReferences"
+                "$ref": "#/components/schemas/VerseCrossReferencesDTO"
               },
               {
                 "type": "null"
@@ -664,7 +699,7 @@
           "reference",
           "verses"
         ],
-        "title": "VerseResponse"
+        "title": "VerseResponseDTO"
       },
       "SearchQuery": {
         "properties": {

@@ -47,6 +47,11 @@ class CrossReferenceRelation:
     target_ref_localized: Optional[str] = None
     note: Optional[str] = None
     text: Optional[str] = None
+    # Short label for the BJ-style margin: book elided when it repeats the book
+    # being read or the previous reference in the same verse's stack, '+' kept
+    # when the reference carries an explanatory note. Positional, so it is only
+    # meaningful inside VerseItem.cross_references.
+    target_ref_margin: Optional[str] = None
 
 @dataclass
 class VerseCrossReferences:
@@ -58,6 +63,9 @@ class VerseItem:
     ref: str
     primary: Verse
     parallels: List[Verse] = field(default_factory=list)
+    # Cross-references belonging to THIS verse, capped for margin display.
+    # VerseResponse.cross_references keeps the uncapped aggregate for the whole passage.
+    cross_references: Optional[VerseCrossReferences] = None
 
 @dataclass(frozen=True)
 class VerseResponse:

@@ -59,6 +59,7 @@ def search_verses(
     crossref: bool = Query(False, description="Show cross references"),
     crossref_full: bool = Query(False, description="Display cross-references with text"),
     crossref_source: Optional[str] = Query(None, description="Filter cross-references by source"),
+    crossref_max: int = Query(3, ge=1, le=50, description="Max cross-references kept per verse for margin display"),
     use_case: SearchBibleUseCase = Depends(get_search_use_case)
 ):
     return use_case.execute(
@@ -68,7 +69,8 @@ def search_verses(
         french_version=bible,
         show_crossrefs=crossref,
         crossref_full=crossref_full,
-        crossref_source=crossref_source
+        crossref_source=crossref_source,
+        crossref_max=crossref_max
     )
 
 @app.get("/api/v1/find", response_model=FindResponseDTO)

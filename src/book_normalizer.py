@@ -17,7 +17,12 @@ class BookNormalizer:
         self.OT_BOOKS = {
             'GEN', 'EXO', 'LEV', 'NUM', 'DEU', 'JOS', 'JDG', 'RUT', '1SA', '2SA', '1KI', '2KI', '1CH', '2CH', 'EZR', 'NEH', 'EST',
             'JOB', 'PSA', 'PRO', 'ECC', 'SNG', 'ISA', 'JER', 'LAM', 'EZK', 'DAN', 'HOS', 'JOL', 'AMO', 'OBA', 'JON', 'MIC', 'NAM',
-            'HAB', 'ZEP', 'HAG', 'ZEC', 'MAL'
+            'HAB', 'ZEP', 'HAG', 'ZEC', 'MAL',
+            # data/bible_books.json spells these three EZE/JOE/NAH while the TF
+            # converter (scripts/converters/convert_tob_epub.py) emitted EZK/JOL/NAM.
+            # Both spellings are the same books; accept both so is_ot() cannot
+            # silently route an Ezekiel/Joel/Nahum reference into references_nt_*.json.
+            'EZE', 'JOE', 'NAH'
         }
         self.NT_BOOKS = {
             'MAT', 'MRK', 'LUK', 'JHN', 'ACT', 'ROM', '1CO', '2CO', 'GAL', 'EPH', 'PHP', 'COL', '1TH', '2TH', '1TI', '2TI', 'TIT',
