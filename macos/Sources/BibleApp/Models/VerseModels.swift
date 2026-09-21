@@ -89,18 +89,6 @@ struct CrossReferenceRelation: Codable, Identifiable {
     }
 }
 
-// MARK: - SearchResult
-struct SearchResult: Codable, Identifiable {
-    var id: String { ref + translation + String(score) } // Unique combo
-    let ref: String
-    let text: String
-    let translation: String
-    let score: Double
-    let book: String
-    let chapter: Int
-    let verse: Int
-}
-
 // MARK: - FindResponse
 struct FindResponse: Codable {
     let lemma: String

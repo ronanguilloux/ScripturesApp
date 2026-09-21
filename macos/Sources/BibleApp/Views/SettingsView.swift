@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("ScripturesApp_ServerPath") private var serverPath: String = "/Users/ronan/Documents/Gemini/antigravity/ScripturesApp"
+    @AppStorage("ScripturesApp_ServerPath") private var serverPath: String = ServerManager.shared.serverPath
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
