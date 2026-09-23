@@ -27,6 +27,13 @@ struct ReadView: View {
     /// Target verse texts fetched on hover, keyed by target_ref.
     @State private var previewCache: [String: String] = [:]
 
+    /// Browser-style stack: one entry per reference the reader asked for.
+    /// Option changes (language, cross-ref source) re-run performSearch() on the same
+    /// reference, so nothing is pushed there -- only at the two points that carry an
+    /// intent to move: submitting the field, and clicking a reference.
+    @State private var history: [String] = []
+    @State private var historyIndex = -1
+
     /// ContentView owns and persists the popover width; the gutter only needs to read it.
     @AppStorage("windowWidth_v2") private var windowWidth: Double = 600
 
@@ -124,6 +131,17 @@ struct ReadView: View {
 
             // Search Bar
             HStack {
+                Button { go(-1) } label: { Image(systemName: "chevron.left") }
+                    .buttonStyle(.plain)
+                    .disabled(!canGoBack)
+                    .keyboardShortcut("[", modifiers: .command)
+                    .help("Retour")
+                Button { go(1) } label: { Image(systemName: "chevron.right") }
+                    .buttonStyle(.plain)
+                    .disabled(!canGoForward)
+                    .keyboardShortcut("]", modifiers: .command)
+                    .help("Suivant")
+
                 Image(systemName: "book") // Different icon for Read
                     .foregroundColor(.gray)
                 TextField("Reference (e.g. Mc 7:8)", text: $searchText)
@@ -131,6 +149,7 @@ struct ReadView: View {
                     .font(.title2)
                     .focused($isFocused)
                     .onSubmit {
+                        pushHistory(searchText)
                         performSearch()
                     }
                 if isLoading {
@@ -375,6 +394,32 @@ struct ReadView: View {
     /// which the parser cannot resolve -- navigate with the full localized form.
     private func navigate(to rel: CrossReferenceRelation) {
         searchText = rel.targetRefLocalized ?? rel.targetRef
+        pushHistory(searchText)
+        performSearch()
+    }
+
+    // MARK: - History
+
+    private var canGoBack: Bool { historyIndex > 0 }
+    private var canGoForward: Bool { historyIndex >= 0 && historyIndex < history.count - 1 }
+
+    private func pushHistory(_ ref: String) {
+        guard historyIndex < 0 || history[historyIndex] != ref else { return }
+        // Branching off mid-stack drops what was ahead, as a browser does.
+        if historyIndex < history.count - 1 {
+            history.removeSubrange((historyIndex + 1)...)
+        }
+        history.append(ref)
+        historyIndex = history.count - 1
+    }
+
+    /// Replays an entry without recording it -- otherwise going back would
+    /// itself become a step forward.
+    private func go(_ delta: Int) {
+        let i = historyIndex + delta
+        guard history.indices.contains(i) else { return }
+        historyIndex = i
+        searchText = history[i]
         performSearch()
     }
 
